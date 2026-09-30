@@ -1,14 +1,25 @@
 import {createBrowserRouter, RouterProvider} from 'react-router';
-import App from "./App.tsx"
+import LoginPage from './pages/LoginPage.tsx';
+import MainPage from './pages/MainPage.tsx';
+import BeneficiariesPage from './pages/BeneficiariesPage.tsx';
+import StatementsPage from './pages/StatementsPage.tsx';
 
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <App/>
+        element: <MainPage/>
     },
     {
-        path: '/test',
-        element: <h1>This is a test</h1>
+        path: '/login',
+        element: <LoginPage/>
+    },
+    {
+        path: '/beneficiaries',
+        element: <BeneficiariesPage/>
+    },
+    {
+        path: '/statements',
+        element: <StatementsPage/>
     }
 ]);
 

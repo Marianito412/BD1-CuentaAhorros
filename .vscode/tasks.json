@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "sqlproj: Build BancoDB",
+			"type": "process",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"e:/TEC/2026 SEMESTRE 2/Bases de Datos 1/Proyectos/Tarea2/BancoDB/BancoDB.sqlproj"
+			],
+			"problemMatcher": "$sqlproj-problem-matcher",
+			"isBackground": true,
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "Builds the BancoDB SQL project"
+		}
+	]
+}
