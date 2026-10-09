@@ -1,3 +1,4 @@
+
 DROP TABLE IF EXISTS dbo.Beneficiario
 CREATE TABLE dbo.Beneficiario (
     Id             INT          IDENTITY (1, 1) NOT NULL,
@@ -82,7 +83,7 @@ CREATE TABLE dbo.TipoTransaccion (
     flagEsCredito BIT          NOT NULL CONSTRAINT PK_TipoTransaccion PRIMARY KEY (Id)
 );
 
-DROP TABLE IF EXISTS dbo.Transaccion
+DROP TABLE IF EXISTS dbo.Transacccion
 CREATE TABLE dbo.Transacccion (
     Id                INT          IDENTITY (1, 1) NOT NULL,
     IdCuenta          VARCHAR (64) NOT NULL,
@@ -126,11 +127,32 @@ CREATE TABLE dbo.Usuario (
     Id                  INT          IDENTITY (1, 1) NOT NULL,
     [User]              VARCHAR (32),
     Pass                VARCHAR (64),
+    IdPersona           VARCHAR (64),
     flagEsAdministrador BIT          DEFAULT ((0)),
-    CONSTRAINT PK_Usuario PRIMARY KEY (Id)
+
+    CONSTRAINT PK_Usuario PRIMARY KEY (Id),
+    CONSTRAINT UQ_Usuario_User UNIQUE ([User]),
+    CONSTRAINT FK_Usuario_Persona FOREIGN KEY (IdPersona) REFERENCES dbo.Persona(ValorDocumentoIdentidad)
 );
 
+DROP TABLE IF EXISTS dbo.UsuarioVer
+CREATE TABLE dbo.UsuarioVer (
+    Id          INT          IDENTITY (1, 1) NOT NULL,
+    IdUsuario VARCHAR (32),
+    IdCuenta    VARCHAR (64)
+
+    CONSTRAINT PK_UsuarioVer PRIMARY KEY (Id),
+    CONSTRAINT FK_UsuarioVer_Usuario FOREIGN KEY (IdUsuario) REFERENCES dbo.Usuario([User]),
+    CONSTRAINT FK_UsuarioVer_Cuenta FOREIGN KEY (IdCuenta) REFERENCES dbo.Cuenta(NumeroCuenta)
+);
 --TESTING---------------------------------------------------------------------------------
+
+select * from usuario
+
+-- Encontrar todas las cuentas de un usuario
+select * from UsuarioVer as UV
+    inner join Cuenta as C on C.NumeroCuenta = UV.IdCuenta
+where IdUsuario = 'Mariano'
 
 -- Encontrar todos los beneficiarios de una cuenta
 SELECT *
