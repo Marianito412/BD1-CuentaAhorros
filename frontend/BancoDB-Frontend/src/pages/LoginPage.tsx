@@ -8,15 +8,30 @@ import {
   Title,
 } from "@mantine/core";
 import { useState } from "react";
+import userSession from "../core/Session";
+import { useNavigate } from "react-router";
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [user, setUser] = useState("");
   let [password, setPassword] = useState("");
 
   async function onSubmit() {
-    console.log("Usuario: " + user + "\nContraseña: " + password);
+    //console.log("Usuario: " + user + "\nContraseña: " + password);
 
-    const response = await fetch("http://127.0.0.1:5000/api/login", {
+    //http://127.0.0.1:5000/api/login
+    const success = await userSession.tryLogin(user, password)
+
+    if (success)
+    {
+      navigate("/")
+    }
+    else
+    {
+
+    }
+    /*
+    const response = await fetch("/api/login", {
       method: "POST",
       body: JSON.stringify({
         user: user,
@@ -27,11 +42,18 @@ function LoginPage() {
         "Content-Type": "application/json",
       },
     });
+
     if (!response.ok){
       console.log("Http ERROR: "+response.status);
     }
 
+    const body = await response.json()
+    console.log(body)
+    if (body["success"]){
+      console.log("Success")
+    }
     console.log(response.json());
+    */
   }
 
   return (

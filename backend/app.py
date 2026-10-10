@@ -1,6 +1,7 @@
 import os
 from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
+from repositories.BancoRepository import BancoRepo
 
 app = Flask(__name__, static_folder='dist', static_url_path='/')
 
@@ -11,14 +12,19 @@ app = Flask(__name__, static_folder='dist', static_url_path='/')
 @app.route('/api/login', methods=['POST'])
 def login():
     req_data = request.get_json() or {}
-    print(req_data)
+    print(req_data["user"], req_data["password"])
+    
+    status = BancoRepo.login(req_data["user"], req_data["password"])
+    
     return jsonify({
-        "status": "success",
-        "received": req_data
+        "success": status,
+        "username": req_data["user"]
     })
 
-@app.route('/api/getAccounts', methods=['GET'])
-def getAccounts():
+@app.route('/api/getAccounts/<username>', methods=['GET'])
+def getAccounts(username):
+    BancoRepo.getAccounts(username)
+    return jsonify({"user": username})
     pass
 
 @app.route('/api/getAccountStatements', methods=['GET'])

@@ -14,7 +14,7 @@ const router = createBrowserRouter([
         element: <LoginPage/>
     },
     {
-        path: '/beneficiaries',
+        path: '/:accountId/beneficiaries',
         element: <BeneficiariesPage/>
     },
     {
