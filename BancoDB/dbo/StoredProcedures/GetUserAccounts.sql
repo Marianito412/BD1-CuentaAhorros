@@ -1,32 +1,46 @@
-CREATE OR ALTER PROCEDURE [dbo].[GetUserAccounts]
-  @inUser VARCHAR(64) = 0
+CREATE OR ALTER PROCEDURE dbo.GetUserAccounts
+    @inUser VARCHAR(32)
 AS
 BEGIN
-  SET NOCOUNT ON
-  SELECT 
-      C.NumeroCuenta, 
-      C.Saldo, 
-      TC.Nombre, 
-      TM.Simbolo 
-  FROM UsuarioVer AS UV 
-    INNER JOIN Cuenta AS C ON C.NumeroCuenta = UV.IdCuenta
-    INNER JOIN TipoCuentaAhorros AS TC ON TC.Id = C.IdTipoCuenta
-    INNER JOIN TipoMoneda AS TM ON TM.Id = C.IdTipoCuenta
-  WHERE UV.IdUsuario = @inUser
-END
+    SET NOCOUNT ON;
 
-SELECT * FROM UsuarioVer AS UV 
-  INNER JOIN Cuenta AS C ON C.NumeroCuenta = UV.IdCuenta
-  INNER JOIN TipoCuentaAhorros AS TC ON TC.Id = C.IdTipoCuenta
-  INNER JOIN TipoMoneda AS TM ON TM.Id = C.IdTipoCuenta
+    DECLARE @IdUsuario INT;
+    DECLARE @EsAdministrador BIT;
 
-WHERE UV.IdUsuario = 'Mariano'
+    SELECT
+        @IdUsuario = Id,
+        @EsAdministrador = flagEsAdministrador
+    FROM dbo.Usuario
+    WHERE [User] = @inUser;
 
-SELECT C.NumeroCuenta, C.Saldo, TC.Nombre, TM.Simbolo FROM UsuarioVer AS UV 
-  INNER JOIN Cuenta AS C ON C.NumeroCuenta = UV.IdCuenta
-  INNER JOIN TipoCuentaAhorros AS TC ON TC.Id = C.IdTipoCuenta
-  INNER JOIN TipoMoneda AS TM ON TM.Id = C.IdTipoCuenta
+    IF @IdUsuario IS NULL
+    BEGIN
+        SELECT 0 AS Resultado,
+               'Usuario no encontrado.' AS Mensaje;
+        RETURN;
+    END;
 
-WHERE UV.IdUsuario = 'Mariano'
-
-EXEC GetUserAccounts @inUser='Mariano'
+    SELECT
+        C.Id,
+        C.NumeroCuenta,
+        C.Saldo,
+        TC.Nombre AS TipoCuenta,
+        TM.Nombre AS Moneda,
+        TM.Simbolo
+    FROM dbo.Cuenta C
+    INNER JOIN dbo.TipoCuentaAhorros TC
+        ON TC.Id = C.IdTipoCuenta
+    INNER JOIN dbo.TipoMoneda TM
+        ON TM.Id = TC.IdTipoMoneda
+    WHERE
+        @EsAdministrador = 1
+        OR EXISTS
+        (
+            SELECT 1
+            FROM dbo.UsuarioVer UV
+            WHERE UV.IdUsuario = @IdUsuario
+              AND UV.IdCuenta = C.Id
+        )
+    ORDER BY C.NumeroCuenta;
+END;
+GO

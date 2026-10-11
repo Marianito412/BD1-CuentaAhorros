@@ -1,19 +1,30 @@
-CREATE OR ALTER PROCEDURE [dbo].[GetAccountBeneficiaries] 
-    @inCuenta VARCHAR(64) = 0
+CREATE OR ALTER PROCEDURE dbo.GetAccountBeneficiaries
+    @inCuenta VARCHAR(64)
 AS
 BEGIN
-    SET NOCOUNT ON
-    SELECT C.NumeroCuenta,
-           P.Email,
-           PT.Nombre,
-           B.Porcentaje
-    FROM Cuenta AS C
-             INNER JOIN dbo.Beneficiario B ON C.NumeroCuenta = B.IdCuenta
-             INNER JOIN dbo.Persona P on P.ValorDocumentoIdentidad = B.IdBeneficiario
-             INNER JOIN dbo.Parentezco PT on PT.Id = B.IdParentezco
+    SET NOCOUNT ON;
 
-             INNER JOIN TipoCuentaAhorros AS TC ON TC.Id = C.IdTipoCuenta
-             INNER JOIN TipoMoneda AS TM ON TM.Id = C.IdTipoCuenta
-    WHERE C.NumeroCuenta = @inCuenta AND B.flagActivo=1
-END
-
+    SELECT
+        B.Id,
+        C.NumeroCuenta,
+        P.Nombre,
+        P.ValorDocumentoIdentidad,
+        P.FechaNacimiento,
+        P.Email,
+        P.Telefono,
+        P.Telefono2,
+        PA.Id AS IdParentezco,
+        PA.Nombre AS Parentezco,
+        B.Porcentaje
+    FROM dbo.Cuenta C
+    INNER JOIN dbo.Beneficiario B
+        ON B.IdCuenta = C.Id
+    INNER JOIN dbo.Persona P
+        ON P.Id = B.IdBeneficiario
+    INNER JOIN dbo.Parentezco PA
+        ON PA.Id = B.IdParentezco
+    WHERE C.NumeroCuenta = @inCuenta
+      AND B.flagActivo = 1
+    ORDER BY B.Id;
+END;
+GO
