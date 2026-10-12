@@ -53,18 +53,6 @@ def rows_to_dicts(cursor, rows):
 # ==========================================
 
 @app.route('/api/login', methods=['POST'])
-def login():
-    req_data = request.get_json() or {}
-    print(req_data["user"], req_data["password"])
-
-    status = BancoRepo.login(req_data["user"], req_data["password"])
-
-    return jsonify({
-        "success": status,
-        "username": req_data["user"]
-    })
-
-@app.route('/api/loginv2', methods=['POST'])
 def loginv2():
     req_data = request.get_json() or {}
 

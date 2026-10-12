@@ -76,6 +76,22 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
             Telefono: '',
             Telefono2: '',
         },
+        validate: {
+            Nombre: (v) => {
+                const s = v.trim();
+                if (!s) return 'El nombre es obligatorio';
+                if (s.length > 64) return 'Máximo 64 caracteres';
+                return null;
+            },
+
+            NombreParentezco: (v) =>
+                p.some((a) => a.Nombre === v) ? null : 'Seleccione un parentezco',
+
+            Porcentaje: (v) =>
+                Number.isInteger(v) && v >= 1 && v <= 100
+                    ? null
+                    : 'El porcentaje debe estar entre 1 y 100',
+        },
     });
     
     useEffect(() => {
@@ -121,12 +137,12 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
     
     async function deleteBeneficiario() {
         console.log("delete beneficiario", form.values.Id);
-        const result = await fetch("/api/deleteBeneficiario", {
-            method: "POST",
+        const result = await fetch("/api/deleteBeneficiary", {
+            method: "DELETE",
             body: JSON.stringify({
-                Id: form.values.Id,
-                User: userSession.getUserName(),
-                AccountNumber: accountNumber
+                beneficiaryId: form.values.Id,
+                user: userSession.getUserName(),
+                account: accountNumber
             }),
             headers: {
                 "Content-Type": "application/json",
@@ -135,7 +151,7 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
         const data = await result.json()
         console.log(data)
         close()
-        navigate(0)
+        //navigate(0)
     }
     
     return (
@@ -197,7 +213,7 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
 }
 
 function NuevoBeneficiarioForm({p, t}: {p:any[], t:DocId[]}){
-    const {accountId} = useParams()
+    const {accountNumber} = useParams()
     const [opened, {open, close}] = useDisclosure(false)
 
     const form = useForm({
@@ -213,6 +229,60 @@ function NuevoBeneficiarioForm({p, t}: {p:any[], t:DocId[]}){
             Telefono2: '',
             
         },
+        validate: {
+            TipoIdentidad: (v) =>
+                t.some((a) => a.Nombre === v) ? null : 'Seleccione un tipo de identificación',
+
+            IdBeneficiario: (v) => {
+                const s = v.trim();
+                if (!s) return 'La identificación es obligatoria';
+                if (s.length > 64) return 'Máximo 64 caracteres';
+                return null;
+            },
+
+            FechaNacimiento: (v) => {
+                if (!v) return 'La fecha de nacimiento es obligatoria';
+                const d = new Date(v);
+                if (isNaN(d.getTime())) return 'Fecha inválida';
+                if (d > new Date()) return 'La fecha no puede estar en el futuro';
+                return null;
+            },
+
+            Nombre: (v) => {
+                const s = v.trim();
+                if (!s) return 'El nombre es obligatorio';
+                if (s.length > 64) return 'Máximo 64 caracteres';
+                return null;
+            },
+
+            NombreParentezco: (v) =>
+                p.some((a) => a.Nombre === v) ? null : 'Seleccione un parentezco',
+
+            Porcentaje: (v) =>
+                Number.isInteger(v) && v >= 1 && v <= 100
+                    ? null
+                    : 'El porcentaje debe estar entre 1 y 100',
+
+            Email: (v) => {
+                const s = v.trim();
+                if (!s) return 'El email es obligatorio';
+                if (s.length > 64) return 'Máximo 64 caracteres';
+                return /^\S+@\S+\.\S+$/.test(s) ? null : 'Email inválido';
+            },
+
+            Telefono: (v) => {
+                const s = v.trim();
+                if (!s) return 'El teléfono es obligatorio';
+                return /^[0-9+\-\s()]{7,32}$/.test(s) ? null : 'Teléfono inválido';
+            },
+
+            // optional: only validated if filled in
+            Telefono2: (v) => {
+                const s = v.trim();
+                if (!s) return null;
+                return /^[0-9+\-\s()]{7,32}$/.test(s) ? null : 'Teléfono inválido';
+            },
+        },
     });
 
     const handleSubmit = async (values: typeof form.values) => {
@@ -223,7 +293,7 @@ function NuevoBeneficiarioForm({p, t}: {p:any[], t:DocId[]}){
 
             body: JSON.stringify({
                 user: userSession.getUserName(),
-                account: accountId,
+                account: accountNumber,
                 document: form.values.IdBeneficiario,
                 documentType: getDocId(t, form.values.TipoIdentidad),
                 name: form.values.Nombre,

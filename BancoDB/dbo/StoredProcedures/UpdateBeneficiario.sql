@@ -57,7 +57,7 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK;
-        THROW;  -- re-raise the original error to the caller
+        THROW;
     END CATCH 
 END
     

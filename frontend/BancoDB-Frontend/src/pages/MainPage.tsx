@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import userSession from "../core/Session";
+import {Button, Group} from "@mantine/core";
 
 type Account = {
   Id: number;
@@ -72,7 +73,13 @@ function MainPage() {
 
   return (
     <div className="page-container">
-      <h1>Mis cuentas</h1>
+      <Group justify="space-between">
+        <h1>Mis cuentas</h1>
+        <Button onClick={()=>{
+          userSession.logout()
+          navigate("/login")
+        }}>Cerrar Sesión</Button>
+      </Group>
 
       <p>
         Usuario: <strong>{userSession.getUserName()}</strong>

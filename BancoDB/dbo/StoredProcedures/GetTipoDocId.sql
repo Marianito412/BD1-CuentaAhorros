@@ -5,4 +5,4 @@ BEGIN
     SELECT Id, Nombre FROM TipoDocuIdentidad
 END
 
-EXEC GetTipoDocId
+-- EXEC GetTipoDocId

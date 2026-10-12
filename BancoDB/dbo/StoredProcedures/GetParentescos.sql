@@ -5,4 +5,4 @@ BEGIN
     SELECT Id, Nombre FROM Parentezco
 END
 
-EXEC GetParentescos
+-- EXEC GetParentescos

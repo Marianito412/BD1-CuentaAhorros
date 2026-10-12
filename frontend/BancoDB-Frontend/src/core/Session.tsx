@@ -32,6 +32,7 @@ class UserSessionService {
 
       if (body.status === "success") {
         this.userName = body.user;
+        this.setUserName(body.user);
         this.userId = body.userId;
         this.isAdmin = body.isAdmin;
         return true;
@@ -39,21 +40,12 @@ class UserSessionService {
 
       this.clearSession();
       return false;
+      
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       this.clearSession();
       return false;
     }
-    const body = await response.json()
-    console.log(body)
-
-    if (body["success"]){
-      this.setUserName(body["username"]);
-      return true;
-    }
-
-    this.setUserName("");
-    return false;
   }
 
   public logout(): void {
@@ -70,7 +62,6 @@ class UserSessionService {
       if (name) localStorage.setItem("BankUsername", name);
       else localStorage.removeItem("BankUsername");
     } catch {
-      // storage can be blocked (private mode, quota); the in-memory value still works
     }
   }
 

@@ -12,10 +12,5 @@ END
 SELECT Porcentaje FROM Beneficiario as B
 WHERE IdCuenta = 3
 
-exec GetPorcentajeBeneficiarios @inCuenta = '11000010'
+-- EXEC GetPorcentajeBeneficiarios @inCuenta = '11000010'
     
-select * from Persona
-
-select * from Usuario
-
-select * from UsuarioVer
