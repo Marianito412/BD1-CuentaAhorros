@@ -48,6 +48,17 @@ class BancoRepository(BaseRepository):
         print(result)
         cursor.close()
         
+    def getPorcentaje(self, cuenta):
+        cursor = self.CreateCursor()
+        cursor.execute("EXEC GetPorcentajeBeneficiarios @inCuenta=?", (cuenta))
+
+        columns = [column[0] for column in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        self.DBConnection.commit()
+        cursor.close()
+        return results
+        
     def getBeneficiaries(self, account):
         cursor = self.CreateCursor()
         cursor.execute("EXEC GetAccountBeneficiaries @inCuenta=?", (account))
@@ -55,6 +66,17 @@ class BancoRepository(BaseRepository):
         columns = [column[0] for column in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
+        self.DBConnection.commit()
+        cursor.close()
+        return results
+
+    def getTipoDocId(self):
+        cursor = self.CreateCursor()
+        cursor.execute("EXEC GetTipoDocId")
+
+        columns = [column[0] for column in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
         self.DBConnection.commit()
         cursor.close()
         return results
@@ -69,5 +91,25 @@ class BancoRepository(BaseRepository):
         self.DBConnection.commit()
         cursor.close()
         return results
+
+    def addBeneficiary(self, user, cuenta, documento, tipo_doc, nombre,
+                       fecha_nac, email, tel1, tel2, parentesco, porcentaje):
+        cursor = self.CreateCursor()
+        try:
+            cursor.execute(
+                "EXEC dbo.AgregarBeneficiario "
+                "@inUser=?, @inNumeroCuenta=?, @inValorDocumentoIdentidad=?, "
+                "@inTipoDocuIdentidad=?, @inNombre=?, @inFechaNacimiento=?, "
+                "@inEmail=?, @inTelefono=?, @inTelefono2=?, "
+                "@inIdParentezco=?, @inPorcentaje=?",
+                (str(user), str(cuenta), str(documento), int(tipo_doc), str(nombre),
+                 fecha_nac, str(email), str(tel1), str(tel2),
+                 int(parentesco), int(porcentaje))
+            )
+            row = cursor.fetchone()
+            self.DBConnection.commit()
+            return {"ok": row.Resultado == 1, "mensaje": row.Mensaje}
+        finally:
+            cursor.close()
 
 BancoRepo = BancoRepository()

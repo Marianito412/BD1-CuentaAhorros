@@ -1,12 +1,14 @@
 import {Badge, Card, Group, NumberFormatter, Stack, Title, Text, Menu} from "@mantine/core";
 import {useNavigate} from "react-router";
 import userSession from "../core/Session";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 
 type AccountInfo = {
-    saldo: number;
-    tipoCuenta: string;
-    numCuenta: string;
+    Saldo: number;
+    TipoCuenta: string;
+    Simbolo: string;
+    Moneda: string;
+    NumeroCuenta: string;
 }
 
 function AccountCard({info}: { info: AccountInfo }) {
@@ -21,24 +23,14 @@ function AccountCard({info}: { info: AccountInfo }) {
 
                     <Card.Section withBorder inheritPadding py="xs">
                         <Group justify="space-between">
-                            <Text fw={500}>{info.tipoCuenta}</Text>
-                            <Badge><Text fw={500}>{info.numCuenta}</Text></Badge>
+                            <Text fw={500}>{info.TipoCuenta}</Text>
+                            <Badge><Text fw={500}>{info.NumeroCuenta}</Text></Badge>
                         </Group>
                     </Card.Section>
 
                     <Title fw={500}>
-                        <NumberFormatter prefix="₡" value={info.saldo} thousandSeparator/>
+                        <NumberFormatter prefix={info.Simbolo} value={info.Saldo} thousandSeparator/>
                     </Title>
-
-                    {/* <Group>
-          <ActionIcon>
-            <InvoiceIcon style={{ width: '70%', height: '70%' }}/>
-          </ActionIcon>
-          <ActionIcon>
-            <UserListIcon style={{ width: '70%', height: '70%' }}/>
-          </ActionIcon>
-        </Group>
-         */}
 
                 </Card>
             </Menu.Target>
@@ -48,7 +40,7 @@ function AccountCard({info}: { info: AccountInfo }) {
                     Estados de cuenta
                 </Menu.Item>
 
-                <Menu.Item onClick={() => navigate("/beneficiaries")}>
+                <Menu.Item onClick={() => navigate("/"+info.NumeroCuenta+"/beneficiaries")}>
                     Beneficiarios
                 </Menu.Item>
             </Menu.Dropdown>
@@ -57,30 +49,25 @@ function AccountCard({info}: { info: AccountInfo }) {
     );
 }
 
-const Accounts: AccountInfo[] = [
-    {saldo: 123450, tipoCuenta: "Proletario", numCuenta: "1234-2132"},
-    {saldo: 4328650, tipoCuenta: "Profesional", numCuenta: "9324-4264"},
-    {saldo: 85700, tipoCuenta: "Proletario", numCuenta: "4385-6343"}
-]
-
 function MainPage() {
+    const [accounts, setAccounts] = useState<AccountInfo[]>([]);
     
-    
-    async function getAccounts() {
+    async function fetchAccounts() {
         const response = await fetch("/api/getAccounts/" + userSession.getUserName(), {method: "Get"})
         let data: any;
         data = await response.json();
-        return data
+        setAccounts(data["accounts"]);
+        //return data
     }
 
     useEffect(() => {
-        const test = getAccounts()
+        fetchAccounts();
     }, [])
 
     return (
         <Stack w="100vw" align="center" justify="center" gap="md">
             <Group mt={50}>
-                {Accounts.map((acc) => <AccountCard info={acc}/>)}
+                {accounts.map((acc) => <AccountCard info={acc}/>)}
             </Group>
         </Stack>
     );

@@ -52,3 +52,7 @@ Where C.NumeroCuenta = '11000010'
 select * from Cuenta
 
 select * from Beneficiario
+
+select * from usuario
+
+select * from TipoOperacion

@@ -15,6 +15,17 @@ BEGIN
     
     BEGIN TRY
         BEGIN TRAN;
+
+        INSERT INTO dbo.Bitacora
+        (
+            IdUsuario, IdTipoOperacion, IP,
+            DatosAntes, DatosDespues, FechaHora
+        )
+        VALUES
+            (
+                @IdUsuario, 1, @inIP,
+                NULL, NULL, SYSDATETIME()
+            );
         
         -- Actualizar Parentezco
         update Beneficiario

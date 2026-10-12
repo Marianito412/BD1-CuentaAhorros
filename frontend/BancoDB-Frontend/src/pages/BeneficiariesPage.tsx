@@ -9,7 +9,7 @@ import {
     Stack,
     TextInput,
     Title,
-    Text, Button, Space
+    Text, Button, Space, Alert
 } from "@mantine/core";
 import userSession from "../core/Session";
 import {DateInput} from "@mantine/dates";
@@ -38,6 +38,26 @@ type beneficiary = {
     flagActivo: boolean,
 }
 
+type Parentesco = {
+    Id: number,
+    Nombre: string,
+}
+
+type DocId = {
+    Id: number,
+    Nombre: string,
+}
+
+function getParentescoId(parentescos: Parentesco[], nombre: string) {
+    const encontrado = parentescos.find(p => p.Nombre === nombre);
+    return encontrado ? encontrado.Id : null;
+}
+
+function getDocId(Docs: DocId[], nombre: string) {
+    const encontrado = Docs.find(p => p.Nombre === nombre);
+    return encontrado ? encontrado.Id : null;
+}
+
 function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
     const [opened, {open, close}] = useDisclosure(false)
     const navigate = useNavigate();
@@ -55,11 +75,6 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
             Telefono: '',
             Telefono2: '',
         },
-        /*
-        validate: {
-            Email: (value) => (/^\S+@\S+$/.test(value) ? null : 'Invalid email'),
-        },
-         */
     });
     
     useEffect(() => {
@@ -77,30 +92,15 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
             Telefono2: b.Telefono2 ?? '',
         });
         form.resetDirty();
-        //console.log("Data ", form.values)
-        //console.log("Input", b)
     },[b])
-
-    /*
-    async function submitChange(values: typeof form.values){
-        const result = await fetch("/api/updateAccountBeneficiary/", {
-            method: "POST",
-            
-            body: values
-        })
-        const data = await result.json()
-        console.log(data)
-    }
-    */
     
     const handleSubmit = async (values: typeof form.values) => {
-        //await onSave({ ...beneficiaryData, ...values }); // your API call
         
         const request = {
             Id: b.Id,
             Porcentaje: values.Porcentaje,
             Nombre: values.Nombre,
-            IdParentezco: values.IdParentezco
+            IdParentezco: getParentescoId(p, values.NombreParentezco)
         }
         
         const result = await fetch("/api/updateAccountBeneficiary", {
@@ -190,48 +190,120 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
     );
 }
 
-/*
-const testData: beneficiary[] = [
-    {
-        Id: 0,
-        Nombre: "Mariano Soto",
-        TipoDocuIdentidad: 1,
-        NombreDocuIdentidad: "Cedula",
-        IdParentezco: 1,
-        NombreParentezco: "Padre",
-        Porcentaje: 65,
-        Email: "test@gmail.com",
-        FechaNacimiento: "12/5/2002",
-        flagActivo: true,
-        IdBeneficiario: "121235324",
-        Telefono:"1234-1234",
-        Telefono2:"1234-1234",
-    }
-]
-*/
-
-function NuevoBeneficiarioForm(){
+function NuevoBeneficiarioForm({p, t}: {p:any[], t:DocId[]}){
+    const {accountId} = useParams()
     const [opened, {open, close}] = useDisclosure(false)
+
+    const form = useForm({
+        initialValues: {
+            Nombre: '',
+            IdBeneficiario: '',
+            TipoIdentidad: '',
+            Porcentaje: 0,
+            NombreParentezco: '',
+            FechaNacimiento: '',
+            Email: '',
+            Telefono: '',
+            Telefono2: '',
+            
+        },
+    });
+
+    const handleSubmit = async (values: typeof form.values) => {
+        console.log(values)
+        
+        const result = await fetch("/api/addBeneficiary", {
+            method: "POST",
+
+            body: JSON.stringify({
+                user: userSession.getUserName(),
+                account: accountId,
+                document: form.values.IdBeneficiario,
+                documentType: getDocId(t, form.values.TipoIdentidad),
+                name: form.values.Nombre,
+                birthDate: form.values.FechaNacimiento,
+                email: form.values.Email,
+                phone: form.values.Telefono,
+                phone2: form.values.Telefono2,
+                relationshipId: getParentescoId(p, form.values.NombreParentezco),
+                percentage: form.values.Porcentaje
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+        const data = await result.json()
+        console.log(data)
+        close();
+        //navigate(0)
+    };
     
     return(
         <>
-            <Button>Agregar</Button>
+            <Button onClick={open}>Agregar</Button>
             <Modal opened={opened} onClose={close}>
-                
+                <Form onSubmit={form.onSubmit(handleSubmit)}>
+                    <Select label="Tipo de identinficación"  {...form.getInputProps("TipoIdentidad")}
+                    data={t.map((a) => a.Nombre)}/>
+                    <TextInput label="Identificación"  {...form.getInputProps("IdBeneficiario")}></TextInput>
+                    <DateInput label="Fecha de nacimiento" {...form.getInputProps("FechaNacimiento")} />
+
+                    <TextInput label="Nombre" {...form.getInputProps('Nombre')}/>
+                    <Select
+                        label="Parentezco"
+                        data={p.map((a) => a.Nombre)}
+                        {...form.getInputProps('NombreParentezco')}
+                    />
+
+                    <Text size="sm" mt="xl">Porcentaje de beneficio</Text>
+                    <Slider color="blue"
+                            value={form.values.Porcentaje}
+                            onChange={(v) => form.setFieldValue('Porcentaje', v)}
+                    />
+
+                    <TextInput label="Email" {...form.getInputProps('Email')}></TextInput>
+                    <TextInput label="Teléfono 1" {...form.getInputProps('Telefono')}></TextInput>
+                    <TextInput label="Teléfono 2" {...form.getInputProps('Telefono2')}></TextInput>
+
+                    <Space h="md"/>
+                    <Group wrap="nowrap">
+                        <Button fullWidth type="submit">Agregar</Button>
+                    </Group>
+                </Form>
             </Modal>
         </>
     );
 }
 
+function PercentageAlert({actual}: {actual: number}) {
+    return(
+        <Alert variant="light" color="red" title="Error de porcentaje">
+            La distribución de porcentajes de los beneficiarios suma {actual}%, modifique los porcentajes de los beneficiarios para que sea menor a 100% 
+        </Alert>
+    );
+}
+
 function BeneficiariesPage() {
+    const navigate = useNavigate();
     const {accountId} = useParams()
     const [beneficiaries, setBeneficiaries] = useState<beneficiary[]>([])
     const [parentescos, setParentescos] = useState([])
+    const [totalPorcentaje, setTotalPorcentaje] = useState(0)
+    const [tipoDocId, setTipoDocId] = useState<DocId[]>([])
 
     useEffect(() => {
-        fetchParentescos()
-            .then(() => {fetchBeneficiaries()})
+        fetchBeneficiaries()
+            .then(async () => {await fetchParentescos()})
+            .then(async () => {await fetchTipoDocId()})
+            .then(async () => {await fetchTotalPorcentaje()})
     }, [])
+
+    async function fetchTipoDocId(){
+        const result = await fetch("/api/getTipoDocId")
+        const data = await result.json()
+        setTipoDocId(data)
+        //console.log(data)
+    }
     
     async function fetchBeneficiaries(){
         const result = await fetch("/api/getAccountBeneficiaries/"+accountId)
@@ -245,13 +317,22 @@ function BeneficiariesPage() {
         const data = await result.json()
         setParentescos(data)
     }
+    
+    async function fetchTotalPorcentaje(){
+        const result = await fetch("/api/getPorcentaje/"+accountId)
+        const data = await result.json()
+        console.log(data[0]["Total"])
+        setTotalPorcentaje(data[0]["Total"])
+    }
 
     return (
         <Stack mt="50px" h="70vh" w="100vw" align="center" justify="center" gap="md">
+            {totalPorcentaje>100 ? <PercentageAlert actual={totalPorcentaje}/> : null}
             <Stack align="stretch">
+                <Button onClick={() => {navigate("/")}}>Regresar a Inicio</Button>
                 <Group justify="space-between">
                     <Title>Beneficiarios</Title>
-                    {beneficiaries.length < 3 ? <NuevoBeneficiarioForm/> : null}
+                    {beneficiaries.length < 3 ? <NuevoBeneficiarioForm p={parentescos} t={tipoDocId}/> : null}
                 </Group>
                 
                 {beneficiaries.map(

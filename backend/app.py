@@ -3,18 +3,19 @@ import pyodbc
 
 from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
+from repositories.BancoRepository import BancoRepo
+
 
 app = Flask(__name__, static_folder='dist', static_url_path='/')
-CORS(app)
 
 # ==========================================
 # 1. DATABASE CONNECTION
 # ==========================================
 
-SERVER = os.getenv("DB_SERVER")
-DATABASE = os.getenv("DB_DATABASE")
-USERNAME = os.getenv("DB_USER")
-PASSWORD = os.getenv("DB_PASSWORD")
+SERVER = "marianito-edu.database.windows.net" #os.getenv("DB_SERVER")
+DATABASE = "PC-1"#os.getenv("DB_DATABASE")
+USERNAME = "mariano"#os.getenv("DB_USER")
+PASSWORD = "Password1"#os.getenv("DB_PASSWORD")
 
 
 def get_connection():
@@ -53,6 +54,18 @@ def rows_to_dicts(cursor, rows):
 
 @app.route('/api/login', methods=['POST'])
 def login():
+    req_data = request.get_json() or {}
+    print(req_data["user"], req_data["password"])
+
+    status = BancoRepo.login(req_data["user"], req_data["password"])
+
+    return jsonify({
+        "success": status,
+        "username": req_data["user"]
+    })
+
+@app.route('/api/loginv2', methods=['POST'])
+def loginv2():
     req_data = request.get_json() or {}
 
     user = req_data.get("user")
@@ -131,9 +144,9 @@ def login():
             connection.close()
 
 
-@app.route('/api/getAccounts', methods=['GET'])
-def getAccounts():
-    user = request.args.get("user")
+@app.route('/api/getAccounts/<user>', methods=['GET'])
+def getAccounts(user):
+    #user = request.args.get("user")
 
     if not user:
         return jsonify({
@@ -259,7 +272,37 @@ def getAccountStatements():
             connection.close()
 
 
-@app.route('/api/getAccountBeneficiaries', methods=['GET'])
+@app.route('/api/getAccountBeneficiaries/<account>', methods=['GET'])
+def getAccountBeneficaries(account):
+    return jsonify(BancoRepo.getBeneficiaries(account))
+
+@app.route('/api/getPorcentaje/<cuenta>', methods=['GET'])
+def getPorcentaje(cuenta):
+    return jsonify(BancoRepo.getPorcentaje(cuenta))
+    pass
+
+@app.route('/api/getParentescos', methods=['GET'])
+def getParentescos():
+    return jsonify(BancoRepo.getParentescos())
+
+@app.route('/api/getTipoDocId', methods=['GET'])
+def getTipoDocId():
+    return jsonify(BancoRepo.getTipoDocId())
+
+@app.route('/api/updateAccountBeneficiary', methods=['POST'])
+def updateAccountBeneficiary():
+    req_data = request.get_json() or {}
+    print(req_data)
+    response = BancoRepo.updateBeneficiary(req_data["Id"], req_data["Porcentaje"], req_data["Nombre"], req_data["IdParentezco"])
+    return jsonify(response)
+
+@app.route('/api/deleteBeneficiario', methods=['POST'])
+def deleteBeneficiario():
+    req_data = request.get_json() or {}
+    response = BancoRepo.deleteBeneficario(req_data["Id"])
+    return jsonify(response)
+
+@app.route('/api/getAccountBeneficiariesv2', methods=['GET'])
 def getAccountBeneficiaries():
     account = request.args.get("account")
 
@@ -312,6 +355,7 @@ def getAccountBeneficiaries():
 @app.route('/api/addBeneficiary', methods=['POST'])
 def addBeneficiary():
     req_data = request.get_json() or {}
+    print(req_data)
 
     required_fields = [
         "user",
@@ -542,18 +586,18 @@ def deleteBeneficiary():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
+    # Prevent API route typos from accidentally returning index.html
     if path.startswith('api/'):
-        return jsonify({
-            "error": "API route not found"
-        }), 404
+        return jsonify({"error": "API route not found"}), 404
 
+    # Check if the requested path matches an actual static asset file on disk
     full_path = os.path.join(app.static_folder, path)
-
     if path != "" and os.path.exists(full_path):
         return send_from_directory(app.static_folder, path)
 
+    # Fallback to index.html to let React Router resolve client-side routes
     return send_from_directory(app.static_folder, 'index.html')
 
-
 if __name__ == '__main__':
+    CORS(app)
     app.run(port=5000, debug=True)

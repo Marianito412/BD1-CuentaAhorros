@@ -5,7 +5,7 @@ BEGIN
     SELECT SUM(Porcentaje) AS Total 
     FROM Beneficiario as B
     INNER JOIN Cuenta AS C ON C.Id = B.IdCuenta 
-    WHERE C.NumeroCuenta = @inCuenta
+    WHERE C.NumeroCuenta = @inCuenta AND B.flagActivo = 1
 END
 
 

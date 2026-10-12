@@ -2,7 +2,7 @@ class UserSessionService {
   private userName: string
 
   constructor() {
-    this.userName = ""
+    this.userName = this.readStorage();
   }
 
   public async tryLogin(user: string, password: string): Promise<boolean> {
@@ -29,16 +29,42 @@ class UserSessionService {
     console.log(body)
 
     if (body["success"]){
-      this.userName = body["username"]
+      this.setUserName(body["username"]);
       return true;
     }
 
-    this.userName = ""
+    this.setUserName("");
     return false;
+  }
+
+  public logout(): void {
+    this.setUserName("");
+  }
+
+  public isLoggedIn(): boolean {
+    return this.userName !== "";
   }
 
   public getUserName(): string {
     return this.userName;
+  }
+  
+  private setUserName(name: string): void {
+    this.userName = name;
+    try {
+      if (name) localStorage.setItem("BankUsername", name);
+      else localStorage.removeItem("BankUsername");
+    } catch {
+      // storage can be blocked (private mode, quota); the in-memory value still works
+    }
+  }
+
+  private readStorage(): string {
+    try {
+      return localStorage.getItem("BankUsername") ?? "";
+    } catch {
+      return "";
+    }
   }
 
 }
