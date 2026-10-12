@@ -59,6 +59,7 @@ function getDocId(Docs: DocId[], nombre: string) {
 }
 
 function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
+    const {accountNumber} = useParams()
     const [opened, {open, close}] = useDisclosure(false)
     const navigate = useNavigate();
 
@@ -98,6 +99,7 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
         
         const request = {
             Id: b.Id,
+            User: userSession.getUserName(),
             Porcentaje: values.Porcentaje,
             Nombre: values.Nombre,
             IdParentezco: getParentescoId(p, values.NombreParentezco)
@@ -121,7 +123,11 @@ function BeneficiaryCard({b, p}: {b: beneficiary, p:any[]}) {
         console.log("delete beneficiario", form.values.Id);
         const result = await fetch("/api/deleteBeneficiario", {
             method: "POST",
-            body: JSON.stringify({"Id": form.values.Id}),
+            body: JSON.stringify({
+                Id: form.values.Id,
+                User: userSession.getUserName(),
+                AccountNumber: accountNumber
+            }),
             headers: {
                 "Content-Type": "application/json",
             },
@@ -285,7 +291,7 @@ function PercentageAlert({actual}: {actual: number}) {
 
 function BeneficiariesPage() {
     const navigate = useNavigate();
-    const {accountId} = useParams()
+    const {accountNumber} = useParams()
     const [beneficiaries, setBeneficiaries] = useState<beneficiary[]>([])
     const [parentescos, setParentescos] = useState([])
     const [totalPorcentaje, setTotalPorcentaje] = useState(0)
@@ -306,7 +312,7 @@ function BeneficiariesPage() {
     }
     
     async function fetchBeneficiaries(){
-        const result = await fetch("/api/getAccountBeneficiaries/"+accountId)
+        const result = await fetch("/api/getAccountBeneficiaries/"+accountNumber)
         const data = await result.json()
         setBeneficiaries(data)
         //console.log(data)
@@ -319,7 +325,7 @@ function BeneficiariesPage() {
     }
     
     async function fetchTotalPorcentaje(){
-        const result = await fetch("/api/getPorcentaje/"+accountId)
+        const result = await fetch("/api/getPorcentaje/"+accountNumber)
         const data = await result.json()
         console.log(data[0]["Total"])
         setTotalPorcentaje(data[0]["Total"])

@@ -1,6 +1,7 @@
 
 CREATE OR ALTER PROCEDURE [dbo].[DeleteBeneficiario]
-    @inId INT
+    @inId INT,
+    @inUsuario VARCHAR(64)
 AS
 BEGIN
     SET NOCOUNT ON

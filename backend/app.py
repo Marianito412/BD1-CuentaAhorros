@@ -144,9 +144,9 @@ def loginv2():
             connection.close()
 
 
-@app.route('/api/getAccounts/<user>', methods=['GET'])
-def getAccounts(user):
-    #user = request.args.get("user")
+@app.route('/api/getAccounts', methods=['GET'])
+def getAccounts():
+    user = request.args.get("user")
 
     if not user:
         return jsonify({
@@ -293,13 +293,13 @@ def getTipoDocId():
 def updateAccountBeneficiary():
     req_data = request.get_json() or {}
     print(req_data)
-    response = BancoRepo.updateBeneficiary(req_data["Id"], req_data["Porcentaje"], req_data["Nombre"], req_data["IdParentezco"])
+    response = BancoRepo.updateBeneficiary(req_data["Id"], req_data["Porcentaje"], req_data["Nombre"], req_data["IdParentezco"], req_data["User"])
     return jsonify(response)
 
 @app.route('/api/deleteBeneficiario', methods=['POST'])
 def deleteBeneficiario():
     req_data = request.get_json() or {}
-    response = BancoRepo.deleteBeneficario(req_data["Id"])
+    response = BancoRepo.deleteBeneficario(req_data["Id"], req_data["User"])
     return jsonify(response)
 
 @app.route('/api/getAccountBeneficiariesv2', methods=['GET'])

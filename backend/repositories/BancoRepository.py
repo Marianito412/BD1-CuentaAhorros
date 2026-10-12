@@ -20,18 +20,25 @@ class BancoRepository(BaseRepository):
             print("failure")
         return True if result[0] else False
     
-    def updateBeneficiary(self, id, porcentaje, nombre, parentesco):
+    def updateBeneficiary(self, id, porcentaje, nombre, parentesco, usuario):
         cursor = self.CreateCursor()
-        #print(id, type(id) , nombre, type(nombre), porcentaje, type(porcentaje), parentesco, type(parentesco))
-        
-        cursor.execute("EXEC dbo.UpdateBeneficiario @inId=?, @inPorcentaje=?, @inNombre=?, @inParentesco=?", (int(id), int(porcentaje), str(nombre), int(parentesco)))
+        print(id, nombre, porcentaje, parentesco, usuario)
+
+        cursor.execute(
+            "EXEC dbo.UpdateBeneficiario "
+            "@inId=?, "
+            "@inPorcentaje=?, "
+            "@inNombre=?, "
+            "@inParentesco=?, "
+            "@inUsuario=?",
+            (int(id), int(porcentaje), str(nombre), int(parentesco), str(usuario)))
         result = cursor.fetchone()
         self.DBConnection.commit()
         cursor.close()
         
         return result[0]
     
-    def deleteBeneficario(self, id):
+    def deleteBeneficario(self, id, usuario):
         cursor = self.CreateCursor()
         cursor.execute("EXEC dbo.deleteBeneficiario @inId=?", (id))
         result = cursor.fetchone()

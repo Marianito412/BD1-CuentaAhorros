@@ -2,7 +2,9 @@ CREATE OR ALTER PROCEDURE [dbo].[UpdateBeneficiario]
     @inId INT,
     @inPorcentaje INT,
     @inNombre VARCHAR(64),
-    @inParentesco INT 
+    @inParentesco INT,
+    @inUsuario VARCHAR(32),
+    @inIP VARCHAR(64) = null
 AS
 BEGIN
     SET NOCOUNT ON
@@ -16,6 +18,12 @@ BEGIN
     BEGIN TRY
         BEGIN TRAN;
 
+        DECLARE @IdUsuario INT;
+
+        SELECT @IdUsuario = Id
+        FROM dbo.Usuario
+        WHERE [User] = @inUsuario;
+        
         INSERT INTO dbo.Bitacora
         (
             IdUsuario, IdTipoOperacion, IP,
@@ -23,7 +31,7 @@ BEGIN
         )
         VALUES
             (
-                @IdUsuario, 1, @inIP,
+                @IdUsuario, 4, @inIP,
                 NULL, NULL, SYSDATETIME()
             );
         
@@ -52,10 +60,5 @@ BEGIN
         THROW;  -- re-raise the original error to the caller
     END CATCH 
 END
-
-select * from Beneficiario where Id=25
-
-select NumeroCuenta from Beneficiario as B
-    inner join Cuenta as C On C.Id = B.IdCuenta 
     
-EXEC dbo.UpdateBeneficiario @inId = 25, @inPorcentaje = 34, @inNombre = 'Lucia Soto Calderon', @inParentesco = 8
+-- EXEC dbo.UpdateBeneficiario @inId = 25, @inPorcentaje = 34, @inNombre = 'Lucia Soto Calderon', @inParentesco = 8
