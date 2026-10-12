@@ -6,7 +6,10 @@ from flask_cors import CORS
 from repositories.BancoRepository import BancoRepo
 
 
-app = Flask(__name__, static_folder='dist', static_url_path='/')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DIST_DIR = os.path.join(BASE_DIR, "dist")   # adjust to where your build lands
+
+app = Flask(__name__, static_folder=None)
 
 # ==========================================
 # 1. DATABASE CONNECTION
@@ -586,17 +589,14 @@ def deleteBeneficiary():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
-    # Prevent API route typos from accidentally returning index.html
-    if path.startswith('api/'):
+    if path.startswith("api/"):
         return jsonify({"error": "API route not found"}), 404
 
-    # Check if the requested path matches an actual static asset file on disk
-    full_path = os.path.join(app.static_folder, path)
-    if path != "" and os.path.exists(full_path):
-        return send_from_directory(app.static_folder, path)
+    full_path = os.path.join(DIST_DIR, path)
+    if path and os.path.isfile(full_path):       # isfile, not exists
+        return send_from_directory(DIST_DIR, path)
 
-    # Fallback to index.html to let React Router resolve client-side routes
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(DIST_DIR, "index.html")
 
 if __name__ == '__main__':
     CORS(app)
