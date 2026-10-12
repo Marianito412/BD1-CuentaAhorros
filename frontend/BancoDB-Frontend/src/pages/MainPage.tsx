@@ -1,7 +1,7 @@
 import {Badge, Card, Group, NumberFormatter, Stack, Title, Text, Menu} from "@mantine/core";
 import {useNavigate} from "react-router";
 import userSession from "../core/Session";
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 
 type AccountInfo = {
     saldo: number;

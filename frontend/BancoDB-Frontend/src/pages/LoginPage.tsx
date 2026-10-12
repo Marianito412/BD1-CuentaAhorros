@@ -26,10 +26,6 @@ function LoginPage() {
     {
       navigate("/")
     }
-    else
-    {
-
-    }
     /*
     const response = await fetch("/api/login", {
       method: "POST",
