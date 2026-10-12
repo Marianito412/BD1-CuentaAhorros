@@ -1,5 +1,5 @@
-CREATE OR ALTER PROCEDURE [dbo].[GetAccountBeneficiaries] 
-    @inCuenta VARCHAR(64) = 0
+CREATE OR ALTER PROCEDURE dbo.GetAccountBeneficiaries
+    @inCuenta VARCHAR(64)
 AS
 BEGIN
     SET NOCOUNT ON

@@ -1,25 +1,43 @@
 CREATE OR ALTER PROCEDURE dbo.Login
-  @inUser VARCHAR (64),
-  @inPass VARCHAR (64)
+    @inUser VARCHAR(32),
+    @inPass VARCHAR(64),
+    @inIP VARCHAR(64) = NULL
 AS
 BEGIN
-  SET NOCOUNT ON;
-  SELECT CASE 
-    WHEN EXISTS (
-      SELECT 1 FROM dbo.Usuario 
-      WHERE [User] = @inUser 
-      AND Pass = @inPass
-      ) THEN 1 
-    ELSE 0 
-  END AS PermitirLogin;
-END
+    SET NOCOUNT ON;
 
-select * from dbo.Usuario AS U where U.[User] = 'Mariano'
+    DECLARE @IdUsuario INT;
 
-EXEC dbo.Login @inUser = 'mariano', @inPass = 'hola123';
+    SELECT @IdUsuario = Id
+    FROM dbo.Usuario
+    WHERE [User] = @inUser
+      AND Pass = @inPass;
 
-insert into dbo.Usuario ([User], Pass)
-values('Mariano', 'hola123')
+    IF @IdUsuario IS NULL
+    BEGIN
+        SELECT 0 AS Resultado,
+               'Usuario o contraseña incorrectos.' AS Mensaje;
+        RETURN;
+    END;
 
-insert into dbo.Usuario ([User], Pass)
-values('JohnDoe', 'coolpassword')
+    INSERT INTO dbo.Bitacora
+    (
+        IdUsuario, IdTipoOperacion, IP,
+        DatosAntes, DatosDespues, FechaHora
+    )
+    VALUES
+    (
+        @IdUsuario, 1, @inIP,
+        NULL, NULL, SYSDATETIME()
+    );
+
+    SELECT
+        1 AS Resultado,
+        'Login correcto.' AS Mensaje,
+        U.Id,
+        U.[User],
+        U.flagEsAdministrador
+    FROM dbo.Usuario U
+    WHERE U.Id = @IdUsuario;
+END;
+GO
