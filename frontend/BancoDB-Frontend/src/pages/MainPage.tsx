@@ -1,76 +1,128 @@
-import {Badge, Card, Group, NumberFormatter, Stack, Title, Text, Menu} from "@mantine/core";
-import {useNavigate} from "react-router";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import userSession from "../core/Session";
-import {useEffect, useState} from "react";
 
-type AccountInfo = {
-    Saldo: number;
-    TipoCuenta: string;
-    Simbolo: string;
-    Moneda: string;
-    NumeroCuenta: string;
-}
-
-function AccountCard({info}: { info: AccountInfo }) {
-    const navigate = useNavigate();
-
-    console.log(userSession.getUserName())
-
-    return (
-        <Menu>
-            <Menu.Target>
-                <Card shadow="lg" w={300} style={{cursor: "pointer"}}>
-
-                    <Card.Section withBorder inheritPadding py="xs">
-                        <Group justify="space-between">
-                            <Text fw={500}>{info.TipoCuenta}</Text>
-                            <Badge><Text fw={500}>{info.NumeroCuenta}</Text></Badge>
-                        </Group>
-                    </Card.Section>
-
-                    <Title fw={500}>
-                        <NumberFormatter prefix={info.Simbolo} value={info.Saldo} thousandSeparator/>
-                    </Title>
-
-                </Card>
-            </Menu.Target>
-
-            <Menu.Dropdown>
-                <Menu.Item onClick={() => navigate("/statements")}>
-                    Estados de cuenta
-                </Menu.Item>
-
-                <Menu.Item onClick={() => navigate("/"+info.NumeroCuenta+"/beneficiaries")}>
-                    Beneficiarios
-                </Menu.Item>
-            </Menu.Dropdown>
-
-        </Menu>
-    );
-}
+type Account = {
+  Id: number;
+  NumeroCuenta: string;
+  Saldo: string;
+  TipoCuenta: string;
+  Moneda: string;
+  Simbolo: string;
+};
 
 function MainPage() {
-    const [accounts, setAccounts] = useState<AccountInfo[]>([]);
-    
-    async function fetchAccounts() {
-        const response = await fetch("/api/getAccounts/" + userSession.getUserName(), {method: "Get"})
-        let data: any;
-        data = await response.json();
-        setAccounts(data["accounts"]);
-        //return data
+  const navigate = useNavigate();
+
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadAccounts() {
+      const user = userSession.getUserName();
+
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/getAccounts?user=${encodeURIComponent(user)}`,
+        );
+
+        if (!response.ok) {
+          throw new Error("Error al consultar las cuentas.");
+        }
+
+        const body = await response.json();
+
+        if (body.status === "success") {
+          setAccounts(body.accounts);
+        } else {
+          setError(body.message || "No fue posible cargar las cuentas.");
+        }
+      } catch (error) {
+        console.error(error);
+        setError("No fue posible conectar con el servidor.");
+      } finally {
+        setLoading(false);
+      }
     }
 
-    useEffect(() => {
-        fetchAccounts();
-    }, [])
+    loadAccounts();
+  }, [navigate]);
 
+  function handleStatements(accountNumber: string) {
+    navigate(`/statements/${accountNumber}`);
+  }
+
+  function handleBeneficiaries(accountNumber: string) {
+    navigate(`/beneficiaries/${accountNumber}`);
+  }
+
+  if (loading) {
     return (
-        <Stack w="100vw" align="center" justify="center" gap="md">
-            <Group mt={50}>
-                {accounts.map((acc) => <AccountCard info={acc}/>)}
-            </Group>
-        </Stack>
+      <div className="page-container">
+        <h2>Cargando cuentas...</h2>
+      </div>
     );
+  }
+
+  return (
+    <div className="page-container">
+      <h1>Mis cuentas</h1>
+
+      <p>
+        Usuario: <strong>{userSession.getUserName()}</strong>
+      </p>
+
+      {error && <p>{error}</p>}
+
+      {!error && accounts.length === 0 && (
+        <p>No hay cuentas disponibles para este usuario.</p>
+      )}
+
+      <div className="accounts-container">
+        {accounts.map((account) => (
+          <div className="account-card" key={account.Id}>
+            <h2>{account.TipoCuenta}</h2>
+
+            <p>
+              <strong>Número de cuenta:</strong> {account.NumeroCuenta}
+            </p>
+
+            <p>
+              <strong>Saldo:</strong> {account.Simbolo}
+              {Number(account.Saldo).toLocaleString("es-CR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </p>
+
+            <p>
+              <strong>Moneda:</strong> {account.Moneda}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => handleStatements(account.NumeroCuenta)}
+            >
+              Ver estados de cuenta
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleBeneficiaries(account.NumeroCuenta)}
+            >
+              Ver beneficiarios
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-export default MainPage
+export default MainPage;

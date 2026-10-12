@@ -4,52 +4,47 @@ import {
   PasswordInput,
   Space,
   Stack,
+  Text,
   TextInput,
   Title,
 } from "@mantine/core";
+
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import userSession from "../core/Session";
-import { useNavigate } from "react-router";
 
 function LoginPage() {
   const navigate = useNavigate();
+
   const [user, setUser] = useState("");
-  let [password, setPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function onSubmit() {
-    //console.log("Usuario: " + user + "\nContraseña: " + password);
+    setError("");
 
-    //http://127.0.0.1:5000/api/login
-    const success = await userSession.tryLogin(user, password)
-
-    if (success)
-    {
-      navigate("/")
-    }
-    /*
-    const response = await fetch("/api/login", {
-      method: "POST",
-      body: JSON.stringify({
-        user: user,
-        password: password,
-      }),
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok){
-      console.log("Http ERROR: "+response.status);
+    if (!user || !password) {
+      setError("Ingrese el usuario y la contraseña.");
+      return;
     }
 
-    const body = await response.json()
-    console.log(body)
-    if (body["success"]){
-      console.log("Success")
+    setLoading(true);
+
+    try {
+      const success = await userSession.tryLogin(user, password);
+
+      if (success) {
+        navigate("/");
+      } else {
+        setError("Usuario o contraseña incorrectos.");
+      }
+    } catch (error) {
+      console.error(error);
+      setError("No fue posible conectar con el servidor.");
+    } finally {
+      setLoading(false);
     }
-    console.log(response.json());
-    */
   }
 
   return (
@@ -57,12 +52,14 @@ function LoginPage() {
       <Stack>
         <Title>¡Bienvenido a BanquitoCR!</Title>
       </Stack>
+
       <Space h="lg" />
 
       <Card w={600}>
         <TextInput
           label="Usuario"
-          placeholder="John Doe"
+          placeholder="Usuario"
+          value={user}
           onChange={(e) => {
             setUser(e.currentTarget.value);
           }}
@@ -70,15 +67,29 @@ function LoginPage() {
 
         <PasswordInput
           label="Contraseña"
-          placeholder="Una contraseña fuerte"
+          placeholder="Contraseña"
+          value={password}
           onChange={(e) => {
             setPassword(e.currentTarget.value);
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onSubmit();
+            }
+          }}
         />
+
         <Space h="md" />
 
-        <Button variant="filled" onClick={onSubmit}>
-          Inciar Sesión
+        {error && (
+          <>
+            <Text c="red">{error}</Text>
+            <Space h="sm" />
+          </>
+        )}
+
+        <Button variant="filled" onClick={onSubmit} loading={loading}>
+          Iniciar Sesión
         </Button>
       </Card>
     </Stack>
