@@ -140,7 +140,7 @@ CREATE TABLE dbo.EstadoCuenta
     CONSTRAINT CK_EstadoCuenta_CantidadSinpeSalientes
         CHECK ([CantidadSinpeSalientes] >= 0),
     CONSTRAINT CK_EstadoCuenta_Fechas
-        CHECK ([FechaFin] >= [FechaInicio]), , , , ,
+        CHECK ([FechaFin] >= [FechaInicio])
 );
 
 CREATE TABLE dbo.TipoOperacion

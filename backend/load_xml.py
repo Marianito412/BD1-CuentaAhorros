@@ -1,12 +1,17 @@
 import os
 import pyodbc
 
-XML_PATH = "../no_catalogos.xml"
+XML_PATH = "../OperacionesTarea3.xml"
 
-SERVER = os.getenv("DB_SERVER")
-DATABASE = os.getenv("DB_DATABASE")
-USERNAME = os.getenv("DB_USER")
-PASSWORD = os.getenv("DB_PASSWORD")
+#SERVER = os.getenv("DB_SERVER")
+#DATABASE = os.getenv("DB_DATABASE")
+#USERNAME = os.getenv("DB_USER")
+#PASSWORD = os.getenv("DB_PASSWORD")
+
+SERVER = "MARIANOPC\SQLEXPRESS" #os.getenv("DB_SERVER")
+DATABASE = "BancoDBLocal"#os.getenv("DB_DATABASE")
+USERNAME = "Marianito"#os.getenv("DB_USER")
+PASSWORD = "Password1"#os.getenv("DB_PASSWORD")
 
 if not all([SERVER, DATABASE, USERNAME, PASSWORD]):
     raise Exception(
@@ -32,10 +37,11 @@ connection_string = (
     "DRIVER={ODBC Driver 18 for SQL Server};"
     f"SERVER={SERVER};"
     f"DATABASE={DATABASE};"
-    f"UID={USERNAME};"
-    f"PWD={PASSWORD};"
+    #f"UID={USERNAME};"
+    #f"PWD={PASSWORD};"
     "Encrypt=yes;"
-    "TrustServerCertificate=no;"
+    "TrustServerCertificate=yes;"
+    "Trusted_Connection=yes;"
     "Connection Timeout=60;"
 )
 
@@ -48,15 +54,16 @@ try:
     print("Cargando no_catalogos.xml...")
 
     cursor.execute(
-        "EXEC dbo.CargarNoCatalogosXML @XmlDatos = ?",
+       "EXEC dbo.ProcesarOperaciones @XmlDatos = ?",
         xml_data
     )
 
-    fila = cursor.fetchone()
+    filas = cursor.fetchall()
 
-    if fila:
-        print("Resultado:", fila[0])
-        print("Mensaje:", fila[1])
+    for fila in filas:
+        if fila:
+            print("Resultado:", fila)
+            #print("Mensaje:", fila[1])
 
     conexion.commit()
 

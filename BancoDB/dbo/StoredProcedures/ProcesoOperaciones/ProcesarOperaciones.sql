@@ -37,10 +37,23 @@ BEGIN
         DECLARE @XmlActual Xml;
         Select @XmlActual = XmlDia
         from #Fechas WHERE Fecha=@FechaActual;
+
+        BEGIN TRY
+            BEGIN TRANSACTION;
+            -- Colocar acá llamadas a SPs que para cada tipo de operación
+            -- Cada SP debería recibir el XmlActual y la FechaActual y extraer los nodos relevantes para su
+            -- proposito basado en esto, no deberian crear transacciones ya que este SP se encarga de eso
+                
+            -- Exec ProcesarPersona @XmlDia=XmlActual, @Fecha = @FechaActual
         
-        --Colocar acá llamadas a SPs que para cada tipo de operación
-        
-        -- Insert Into #DatosProcesados(MyXml) Values(@MiXml);
+            ----------DEBUG----------
+            -- Insert Into #DatosProcesados(MyXml) Values(@MiXml);
+            COMMIT TRANSACTION
+        END TRY
+        BEGIN CATCH
+            IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+            THROW;
+        END CATCH
         
         Print @FechaActual
         Set @FechaActual = DATEADD(DAY, 1, @FechaActual) 
