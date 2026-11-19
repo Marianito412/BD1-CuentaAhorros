@@ -72,4 +72,25 @@ FROM OPENROWSET(
              SINGLE_BLOB
      ) AS x;
 
-EXEC dbo.ProcesarOperaciones @XmlDatos = @xml;
+DECLARE @FechaPrueba DATE = '2026-03-03';   -- <- the day to test
+DECLARE @HacerRollback BIT = 1;
+
+DECLARE @MiXml XML;
+
+SELECT @MiXml = (
+    SELECT F.f.query('.') AS [*]
+    FROM @xml.nodes('/Operaciones/FechaOperacion') AS F(f)
+    WHERE F.f.value('@Fecha', 'DATE') = @FechaPrueba
+    FOR XML PATH(''), TYPE
+);
+
+SET @MiXml = COALESCE(@MiXml, CAST('<FechaOperacion/>' AS XML));
+
+SELECT @FechaPrueba AS Fecha,
+       @MiXml       AS XmlDelDia,
+       @MiXml.value('count(/FechaOperacion)',   'INT') AS NodosFechaOperacion,
+       @MiXml.value('count(/FechaOperacion/*)', 'INT') AS HijosTotales;
+
+Exec ProcesarPersona @XmlDia=@MiXml, @Fecha = @FechaPrueba
+
+-- EXEC dbo.ProcesarOperaciones @XmlDatos = @xml;
