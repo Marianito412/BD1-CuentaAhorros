@@ -10,11 +10,32 @@ type Statement = {
   SaldoInicial: string;
   SaldoFinal: string;
   SaldoMinimo: string;
-  InteresesAcumulados: string;
-  CantidadRetiros: number;
-  CantidadDepositos: number;
-  CantidadSinpeEntrantes: number;
-  CantidadSinpeSalientes: number;
+  CantidadOperacionesATM: number;
+  CantidadOperacionesHumano: number;
+  CantidadOperacionesSinpe: number;
+};
+
+type Movement = {
+  Id: number;
+  Fecha: string;
+  TipoMovimiento: string;
+  flagEsCredito: boolean;
+  Monto: string;
+  Simbolo: string;
+  Descripcion: string;
+  NuevoSaldo: string;
+};
+
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse" as const,
+  marginTop: "15px",
+};
+
+const cellStyle = {
+  padding: "8px 10px",
+  borderBottom: "1px solid #444",
+  textAlign: "left" as const,
 };
 
 function StatementsPage() {
@@ -24,6 +45,13 @@ function StatementsPage() {
   const [statements, setStatements] = useState<Statement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [selectedStatement, setSelectedStatement] = useState<Statement | null>(
+    null,
+  );
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [loadingMovements, setLoadingMovements] = useState(false);
+  const [movementsError, setMovementsError] = useState("");
 
   useEffect(() => {
     async function loadStatements() {
@@ -72,6 +100,43 @@ function StatementsPage() {
     loadStatements();
   }, [accountNumber, navigate]);
 
+  async function loadMovements(statement: Statement) {
+    const user = userSession.getUserName();
+
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    setSelectedStatement(statement);
+    setMovements([]);
+    setMovementsError("");
+    setLoadingMovements(true);
+
+    try {
+      const response = await fetch(
+        `/api/getStatementMovements?user=${encodeURIComponent(
+          user,
+        )}&statementId=${statement.Id}`,
+      );
+
+      const body = await response.json();
+
+      if (body.status === "success") {
+        setMovements(body.movements);
+      } else {
+        setMovementsError(
+          body.message || "No fue posible cargar los movimientos.",
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      setMovementsError("No fue posible conectar con el servidor.");
+    } finally {
+      setLoadingMovements(false);
+    }
+  }
+
   function formatMoney(value: string) {
     return Number(value).toLocaleString("es-CR", {
       minimumFractionDigits: 2,
@@ -79,8 +144,14 @@ function StatementsPage() {
     });
   }
 
+  // El backend envia las fechas a medianoche en hora UTC; se leen en UTC
+  // para que la zona horaria de Costa Rica no las corra un dia hacia atras
   function formatDate(value: string) {
-    return new Date(value).toLocaleDateString("es-CR");
+    const date = new Date(value);
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   if (loading) {
@@ -118,6 +189,11 @@ function StatementsPage() {
             </h2>
 
             <p>
+              <strong>Saldo mínimo:</strong>{" "}
+              {formatMoney(statement.SaldoMinimo)}
+            </p>
+
+            <p>
               <strong>Saldo inicial:</strong>{" "}
               {formatMoney(statement.SaldoInicial)}
             </p>
@@ -126,38 +202,76 @@ function StatementsPage() {
               <strong>Saldo final:</strong> {formatMoney(statement.SaldoFinal)}
             </p>
 
-            <p>
-              <strong>Saldo mínimo:</strong>{" "}
-              {formatMoney(statement.SaldoMinimo)}
-            </p>
-
-            <p>
-              <strong>Intereses acumulados:</strong>{" "}
-              {formatMoney(statement.InteresesAcumulados)}
-            </p>
-
             <hr />
 
             <p>
-              <strong>Retiros:</strong> {statement.CantidadRetiros}
+              <strong>Operaciones en ATM:</strong>{" "}
+              {statement.CantidadOperacionesATM}
             </p>
 
             <p>
-              <strong>Depósitos:</strong> {statement.CantidadDepositos}
+              <strong>Operaciones en cajero humano:</strong>{" "}
+              {statement.CantidadOperacionesHumano}
             </p>
 
             <p>
-              <strong>SINPE entrantes:</strong>{" "}
-              {statement.CantidadSinpeEntrantes}
+              <strong>Operaciones Sinpe:</strong>{" "}
+              {statement.CantidadOperacionesSinpe}
             </p>
 
-            <p>
-              <strong>SINPE salientes:</strong>{" "}
-              {statement.CantidadSinpeSalientes}
-            </p>
+            <button type="button" onClick={() => loadMovements(statement)}>
+              Ver movimientos
+            </button>
           </div>
         ))}
       </div>
+
+      {selectedStatement && (
+        <div className="statement-card" style={{ marginTop: "30px" }}>
+          <h2>
+            Movimientos del {formatDate(selectedStatement.FechaInicio)} al{" "}
+            {formatDate(selectedStatement.FechaFin)}
+          </h2>
+
+          {loadingMovements && <p>Cargando movimientos...</p>}
+
+          {movementsError && <p>{movementsError}</p>}
+
+          {!loadingMovements && !movementsError && movements.length === 0 && (
+            <p>No hay movimientos en este estado de cuenta.</p>
+          )}
+
+          {movements.length > 0 && (
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={cellStyle}>Fecha</th>
+                  <th style={cellStyle}>Descripción</th>
+                  <th style={cellStyle}>Monto</th>
+                  <th style={cellStyle}>Nuevo saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movements.map((movement) => (
+                  <tr key={movement.Id}>
+                    <td style={cellStyle}>{formatDate(movement.Fecha)}</td>
+                    <td style={cellStyle}>{movement.Descripcion}</td>
+                    <td style={cellStyle}>
+                      {movement.flagEsCredito ? "+" : "-"}
+                      {movement.Simbolo}
+                      {formatMoney(movement.Monto)}
+                    </td>
+                    <td style={cellStyle}>
+                      {movement.Simbolo}
+                      {formatMoney(movement.NuevoSaldo)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }

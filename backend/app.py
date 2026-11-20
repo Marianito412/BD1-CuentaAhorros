@@ -262,6 +262,78 @@ def getAccountStatements():
             connection.close()
 
 
+@app.route('/api/getStatementMovements', methods=['GET'])
+def getStatementMovements():
+    user = request.args.get("user")
+    statement_id = request.args.get("statementId")
+
+    if not user or not statement_id:
+        return jsonify({
+            "status": "error",
+            "message": "Faltan los parámetros user o statementId."
+        }), 400
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            EXEC dbo.GetMovimientosEstadoCuenta
+                @inUser = ?,
+                @inIdEstadoCuenta = ?
+            """,
+            user,
+            int(statement_id)
+        )
+
+        rows = cursor.fetchall()
+
+        if not cursor.description:
+            return jsonify({
+                "status": "success",
+                "movements": []
+            })
+
+        data = rows_to_dicts(cursor, rows)
+
+        # Si el SP devuelve Resultado/Mensaje por algún error lógico
+        if len(data) == 1 and "Resultado" in data[0]:
+            if data[0]["Resultado"] == 0:
+                return jsonify({
+                    "status": "error",
+                    "message": data[0].get("Mensaje")
+                }), 400
+
+        connection.commit()
+
+        return jsonify({
+            "status": "success",
+            "movements": data
+        })
+
+    except Exception as error:
+        if connection:
+            connection.rollback()
+
+        print("ERROR GET MOVEMENTS:", error)
+
+        return jsonify({
+            "status": "error",
+            "message": str(error)
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
+
 @app.route('/api/getAccountBeneficiaries/<account>', methods=['GET'])
 def getAccountBeneficaries(account):
     return jsonify(BancoRepo.getBeneficiaries(account))
