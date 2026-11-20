@@ -36,6 +36,7 @@ BEGIN
         FechaNacimiento, Email, Telefono, Telefono2
     FROM @Personas;
     
+    /*
     insert into Bitacora (IdUsuario, IdTipoOperacion, IP, DatosAntes, DatosDespues) 
     select 
         1 AS idUsuario,
@@ -54,8 +55,7 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ) as DatosDespues
     from @Personas p
-    
-    select * from Bitacora
+     */
     
     RETURN 0;
 END

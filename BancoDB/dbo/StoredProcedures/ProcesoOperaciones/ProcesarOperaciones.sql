@@ -28,7 +28,7 @@ BEGIN
     Declare @FechaActual DATE
     SET @FechaActual = @FechaInicial
 
-    SET @FechaFinal = DATEADD(DAY, 3, @FechaActual)
+    --SET @FechaFinal = DATEADD(DAY, 3, @FechaActual)
     
     -- create table #DatosProcesados (MyXml XML)
     
@@ -38,6 +38,13 @@ BEGIN
         Select @XmlActual = XmlDia
         from #Fechas WHERE Fecha=@FechaActual;
 
+        EXEC ProcesarPersona @XmlDia=@XmlActual, @Fecha = @FechaActual
+        EXEC ProcesarCuenta @XmlDia=@XmlActual, @Fecha = @FechaActual
+        EXEC ProcesarBeneficiario @XmlDia=@XmlActual, @Fecha = @FechaActual
+        EXEC ProcesarUsuario @XmlDia=@XmlActual, @Fecha = @FechaActual
+        EXEC ProcesarUsuarioVer @XmlDia=@XmlActual, @Fecha = @FechaActual
+        
+        /*
         BEGIN TRY
             BEGIN TRANSACTION;
             -- Colocar acá llamadas a SPs que para cada tipo de operación
@@ -54,7 +61,7 @@ BEGIN
             IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
             THROW;
         END CATCH
-        
+        */
         Print @FechaActual
         Set @FechaActual = DATEADD(DAY, 1, @FechaActual) 
     END
@@ -63,34 +70,3 @@ BEGIN
     RETURN 0;
 END
 GO
-
-DECLARE @xml XML;
-
-SELECT @xml = CONVERT(XML, BulkColumn, 2)
-FROM OPENROWSET(
-             BULK 'E:\TEC\2026 SEMESTRE 2\Bases de Datos 1\Proyectos\Tarea2\OperacionesTarea3.xml',
-             SINGLE_BLOB
-     ) AS x;
-
-DECLARE @FechaPrueba DATE = '2026-03-03';   -- <- the day to test
-DECLARE @HacerRollback BIT = 1;
-
-DECLARE @MiXml XML;
-
-SELECT @MiXml = (
-    SELECT F.f.query('.') AS [*]
-    FROM @xml.nodes('/Operaciones/FechaOperacion') AS F(f)
-    WHERE F.f.value('@Fecha', 'DATE') = @FechaPrueba
-    FOR XML PATH(''), TYPE
-);
-
-SET @MiXml = COALESCE(@MiXml, CAST('<FechaOperacion/>' AS XML));
-
-SELECT @FechaPrueba AS Fecha,
-       @MiXml       AS XmlDelDia,
-       @MiXml.value('count(/FechaOperacion)',   'INT') AS NodosFechaOperacion,
-       @MiXml.value('count(/FechaOperacion/*)', 'INT') AS HijosTotales;
-
-Exec ProcesarPersona @XmlDia=@MiXml, @Fecha = @FechaPrueba
-
--- EXEC dbo.ProcesarOperaciones @XmlDatos = @xml;

@@ -28,7 +28,7 @@ BEGIN
     select IdCliente, idTipoCuenta, NumeroCuenta, FechaCreacion, Saldo 
     from @Cuentas
 
-
+    /*
     insert into Bitacora (IdUsuario, IdTipoOperacion, IP, DatosAntes, DatosDespues)
     select
         1 AS idUsuario,
@@ -45,6 +45,7 @@ BEGIN
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ) as DatosDespues
     from @Cuentas C
+    */
     
     RETURN 0;
 END
@@ -80,14 +81,16 @@ SET @MiXml = COALESCE(@MiXml, CAST('<FechaOperacion/>' AS XML));
 BEGIN TRANSACTION;
 BEGIN TRY
 
+    EXEC ProcesarPersona @XmlDia=@MiXml, @Fecha = @FechaPrueba
     EXEC ProcesarCuenta @XmlDia=@MiXml, @Fecha = @FechaPrueba
 
     /* ---------- 4) Check the results here ---------- */
     --SELECT 'Persona' As Tabla, * FROM Persona;
     --SELECT 'Bitacora' As Tabla, * FROM Bitacora;
 
-    select * from Cuenta
-    select * from Bitacora
+    select C.NumeroCuenta, P.Nombre from Cuenta as C
+    inner join Persona as P on P.Id = C.IdCliente
+    --select * from Bitacora
     
     IF @HacerRollback = 1
         BEGIN
@@ -105,10 +108,7 @@ BEGIN CATCH
     SELECT ERROR_NUMBER() AS Numero, ERROR_MESSAGE() AS Mensaje, ERROR_LINE() AS Linea;
 END CATCH;
 
---select * from Persona
 --select * From Usuario
 --select * from TipoDocuIdentidad
 --insert into TipoDocuIdentidad (Id, Nombre) Values(0, 'Pasaporte')
 --insert into TipoDocuIdentidad (Id, Nombre) Values(1, 'Cédula')
-
-select * from TipoCuentaAhorros
