@@ -1,10 +1,8 @@
-CREATE TABLE [dbo].[TipoMoneda] (
-    [Id]      INT          IDENTITY (1, 1) NOT NULL,
-    [Nombre]  VARCHAR (32) NULL,
-    [Simbolo] VARCHAR (4)  NULL,
-    PRIMARY KEY CLUSTERED ([Id] ASC)
+CREATE TABLE dbo.TipoMoneda
+(
+    Id      INT         NOT NULL,
+    Nombre  VARCHAR(32) NOT NULL,
+    Simbolo NVARCHAR(4) NOT NULL,
+    CONSTRAINT PK_TipoMoneda
+        PRIMARY KEY (Id)
 );
-
-
-GO
-

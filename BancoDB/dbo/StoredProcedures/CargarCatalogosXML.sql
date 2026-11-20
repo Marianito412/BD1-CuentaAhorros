@@ -46,8 +46,7 @@ BEGIN
         ------------------------------------------------------------
 
         UPDATE TM
-        SET
-            TM.Nombre = X.Nombre,
+        SET TM.Nombre  = X.Nombre,
             TM.Simbolo = X.Simbolo
         FROM dbo.TipoMoneda AS TM
         INNER JOIN
@@ -117,17 +116,18 @@ BEGIN
         ------------------------------------------------------------
 
         UPDATE TCA
-        SET
-            TCA.Nombre = X.Nombre,
-            TCA.IdTipoMoneda = X.IdTipoMoneda,
-            TCA.SaldoMinimo = X.SaldoMinimo,
-            TCA.MultaSaldoMin = X.MultaSaldoMin,
-            TCA.CargoAnual = X.CargoAnual,
-            TCA.NumRetiroHumano = X.NumRetiroHumano,
+        SET TCA.Nombre              = X.Nombre,
+            TCA.IdTipoMoneda        = X.IdTipoMoneda,
+            TCA.SaldoMinimo         = X.SaldoMinimo,
+            TCA.MultaSaldoMin       = X.MultaSaldoMin,
+            TCA.CargoMensual        = X.CargoMensual,
+            TCA.NumRetiroHumano     = X.NumRetiroHumano,
             TCA.NumRetiroAutomatico = X.NumRetiroAutomatico,
-            TCA.ComisionHumano = X.ComisionHumano,
-            TCA.ComisionAutomatico = X.ComisionAutomatico,
-            TCA.Interes = X.Interes
+            TCA.ComisionHumano      = X.ComisionHumano,
+            TCA.ComisionAutomatico  = X.ComisionAutomatico,
+            TCA.MontoMaxSinpeDiario = X.MontoMaxSinpeDiario,
+            TCA.ComisionSinpe       = X.ComisionSinpe,
+            TCA.TasaInteresAnual    = X.TasaInteresAnual
         FROM dbo.TipoCuentaAhorros AS TCA
         INNER JOIN
         (
@@ -137,15 +137,15 @@ BEGIN
                 N.value('@IdTipoMoneda', 'INT') AS IdTipoMoneda,
                 N.value('@SaldoMinimo', 'MONEY') AS SaldoMinimo,
                 N.value('@MultaSaldoMin', 'MONEY') AS MultaSaldoMin,
-                N.value('@CargoAnual', 'MONEY') AS CargoAnual,
+                N.value('@CargoMensual', 'MONEY') AS CargoMensual,
                 N.value('@NumRetirosHumano', 'INT') AS NumRetiroHumano,
                 N.value('@NumRetirosAutomatico', 'INT') AS NumRetiroAutomatico,
-                N.value('@comisionHumano', 'MONEY') AS ComisionHumano,
-                N.value('@comisionAutomatico', 'MONEY') AS ComisionAutomatico,
-                N.value('@interes', 'DECIMAL(10,4)') AS Interes
-            FROM @XmlDatos.nodes(
-                '/Catalogos/Tipo_Cuenta_Ahorros/TipoCuentaAhorro'
-            ) AS T(N)
+                N.value('@ComisionHumano', 'MONEY') AS ComisionHumano,
+                N.value('@ComisionAutomatico', 'MONEY') AS ComisionAutomatico,
+                N.value('@MontoMaxSinpeDiario', 'MONEY') AS MontoMaxSinpeDiario,
+                N.value('@ComisionSinpe', 'MONEY') AS ComisionSinpe,
+                N.value('@TasaInteresAnual', 'DECIMAL(10,4)') AS TasaInteresAnual
+            FROM @XmlDatos.nodes('/Catalogos/Tipo_Cuenta_Ahorros/TipoCuentaAhorro') AS T(N)
         ) AS X
             ON TCA.Id = X.Id;
 
@@ -156,12 +156,14 @@ BEGIN
             IdTipoMoneda,
             SaldoMinimo,
             MultaSaldoMin,
-            CargoAnual,
+            CargoMensual,
             NumRetiroHumano,
             NumRetiroAutomatico,
             ComisionHumano,
             ComisionAutomatico,
-            Interes
+            MontoMaxSinpeDiario,
+            ComisionSinpe,
+            TasaInteresAnual
         )
         SELECT
             N.value('@Id', 'INT'),
@@ -169,15 +171,15 @@ BEGIN
             N.value('@IdTipoMoneda', 'INT'),
             N.value('@SaldoMinimo', 'MONEY'),
             N.value('@MultaSaldoMin', 'MONEY'),
-            N.value('@CargoAnual', 'MONEY'),
+            N.value('@CargoMensual', 'MONEY'),
             N.value('@NumRetirosHumano', 'INT'),
             N.value('@NumRetirosAutomatico', 'INT'),
-            N.value('@comisionHumano', 'MONEY'),
-            N.value('@comisionAutomatico', 'MONEY'),
-            N.value('@interes', 'DECIMAL(10,4)')
-        FROM @XmlDatos.nodes(
-            '/Catalogos/Tipo_Cuenta_Ahorros/TipoCuentaAhorro'
-        ) AS T(N)
+            N.value('@ComisionHumano', 'MONEY'),
+            N.value('@ComisionAutomatico', 'MONEY'),
+            N.value('@MontoMaxSinpeDiario', 'MONEY'),
+            N.value('@ComisionSinpe', 'MONEY'),
+            N.value('@TasaInteresAnual', 'DECIMAL(10,4)')
+        FROM @XmlDatos.nodes('/Catalogos/Tipo_Cuenta_Ahorros/TipoCuentaAhorro') AS T(N)
         WHERE NOT EXISTS
         (
             SELECT 1
@@ -187,7 +189,54 @@ BEGIN
 
 
         ------------------------------------------------------------
-        -- 5. TIPOS DE OPERACION DE BITACORA
+        -- 5. TIPOS DE MOVIMIENTO
+        ------------------------------------------------------------
+
+        UPDATE TMV
+        SET TMV.Nombre                = X.Nombre,
+            TMV.flagEsCredito         = X.flagEsCredito,
+            TMV.flagGeneraComprobante = X.flagGeneraComprobante
+        FROM dbo.TipoMovimiento AS TMV
+        INNER JOIN
+        (
+            SELECT
+                N.value('@Id', 'INT') AS Id,
+                N.value('@Nombre', 'VARCHAR(64)') AS Nombre,
+                CASE
+                    WHEN N.value('@Accion', 'VARCHAR(16)') = 'Credito' THEN 1
+                    ELSE 0
+                END AS flagEsCredito,
+                N.value('@flagGeneraComprobante', 'BIT') AS flagGeneraComprobante
+            FROM @XmlDatos.nodes('/Catalogos/Tipos_Movimiento/TipoMovimiento') AS T(N)
+        ) AS X
+            ON TMV.Id = X.Id;
+
+        INSERT INTO dbo.TipoMovimiento
+        (
+            Id,
+            Nombre,
+            flagEsCredito,
+            flagGeneraComprobante
+        )
+        SELECT
+            N.value('@Id', 'INT'),
+            N.value('@Nombre', 'VARCHAR(64)'),
+            CASE
+                WHEN N.value('@Accion', 'VARCHAR(16)') = 'Credito' THEN 1
+                ELSE 0
+            END,
+            N.value('@flagGeneraComprobante', 'BIT')
+        FROM @XmlDatos.nodes('/Catalogos/Tipos_Movimiento/TipoMovimiento') AS T(N)
+        WHERE NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.TipoMovimiento AS TMV
+            WHERE TMV.Id = N.value('@Id', 'INT')
+        );
+
+
+        ------------------------------------------------------------
+        -- 6. TIPOS DE OPERACION DE BITACORA
         ------------------------------------------------------------
 
         UPDATE TOB
@@ -196,11 +245,9 @@ BEGIN
         INNER JOIN
         (
             SELECT
-                N.value('@id', 'INT') AS Id,
-                N.value('@nombre', 'VARCHAR(64)') AS Nombre
-            FROM @XmlDatos.nodes(
-                '/Catalogos/TipoOperacionesBitacora/TipoOperacion'
-            ) AS T(N)
+                N.value('@Id', 'INT') AS Id,
+                N.value('@Nombre', 'VARCHAR(64)') AS Nombre
+            FROM @XmlDatos.nodes('/Catalogos/TipoOperacionesBitacora/TipoOperacion') AS T(N)
         ) AS X
             ON TOB.Id = X.Id;
 
@@ -210,16 +257,14 @@ BEGIN
             Nombre
         )
         SELECT
-            N.value('@id', 'INT'),
-            N.value('@nombre', 'VARCHAR(64)')
-        FROM @XmlDatos.nodes(
-            '/Catalogos/TipoOperacionesBitacora/TipoOperacion'
-        ) AS T(N)
+            N.value('@Id', 'INT'),
+            N.value('@Nombre', 'VARCHAR(64)')
+        FROM @XmlDatos.nodes('/Catalogos/TipoOperacionesBitacora/TipoOperacion') AS T(N)
         WHERE NOT EXISTS
         (
             SELECT 1
             FROM dbo.TipoOperacion AS TOB
-            WHERE TOB.Id = N.value('@id', 'INT')
+            WHERE TOB.Id = N.value('@Id', 'INT')
         );
 
 
@@ -234,7 +279,6 @@ BEGIN
             'Catalogos cargados correctamente.' AS Mensaje;
 
     END TRY
-
     BEGIN CATCH
 
         IF @@TRANCOUNT > 0
@@ -246,5 +290,3 @@ BEGIN
 
     END CATCH
 END;
-
-GO

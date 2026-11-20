@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[GetAccountStatements]
+CREATE OR ALTER PROCEDURE [dbo].[GetAccountStatements]
     @inUser VARCHAR(32),
     @inNumeroCuenta VARCHAR(64)
 AS
@@ -102,10 +102,11 @@ BEGIN
 
 
         ------------------------------------------------------------
-        -- 5. DEVOLVER LOS ULTIMOS 8 ESTADOS
+        -- 5. DEVOLVER LOS ESTADOS DE CUENTA
+        -- Del mas reciente al mas antiguo
         ------------------------------------------------------------
 
-        SELECT TOP (8)
+        SELECT
             EC.Id,
             C.NumeroCuenta,
             EC.FechaInicio,
@@ -113,11 +114,9 @@ BEGIN
             EC.SaldoInicial,
             EC.SaldoFinal,
             EC.SaldoMinimo,
-            EC.InteresesAcumulados,
-            EC.CantidadRetiros,
-            EC.CantidadDepositos,
-            EC.CantidadSinpeEntrantes,
-            EC.CantidadSinpeSalientes
+            EC.CantidadOperacionesATM,
+            EC.CantidadOperacionesHumano,
+            EC.CantidadOperacionesSinpe
         FROM dbo.EstadoCuenta AS EC
 
         INNER JOIN dbo.Cuenta AS C
@@ -139,5 +138,3 @@ BEGIN
 
     END CATCH
 END;
-
-GO

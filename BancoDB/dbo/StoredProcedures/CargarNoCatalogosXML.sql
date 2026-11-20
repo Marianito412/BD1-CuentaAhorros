@@ -103,49 +103,7 @@ BEGIN
         );
 
         ------------------------------------------------------------
-        -- 4. ESTADOS DE CUENTA
-        ------------------------------------------------------------
-        INSERT INTO dbo.EstadoCuenta
-        (
-            IdCuenta,
-            FechaInicio,
-            FechaFin,
-            SaldoInicial,
-            SaldoFinal,
-            SaldoMinimo,
-            InteresesAcumulados,
-            CantidadRetiros,
-            CantidadDepositos,
-            CantidadSinpeEntrantes,
-            CantidadSinpeSalientes
-        )
-        SELECT
-            C.Id,
-            X.N.value('@fechaInicio', 'DATE'),
-            X.N.value('@fechafin', 'DATE'),
-            X.N.value('@saldoinicial', 'MONEY'),
-            X.N.value('@saldo_final', 'MONEY'),
-            X.N.value('@saldoMinimo', 'MONEY'),
-            X.N.value('@interesesAcumulados', 'MONEY'),
-            X.N.value('@cantRetiros', 'INT'),
-            X.N.value('@cantDepositos', 'INT'),
-            X.N.value('@cantSinpeEntrantes', 'INT'),
-            X.N.value('@cantSinpeSalientes', 'INT')
-        FROM @XmlDatos.nodes('/NoCatalogos/Estados_de_Cuenta/Estado_de_Cuenta') AS X(N)
-        INNER JOIN dbo.Cuenta C
-            ON C.NumeroCuenta =
-               X.N.value('@NumeroCuenta', 'VARCHAR(64)')
-        WHERE NOT EXISTS
-        (
-            SELECT 1
-            FROM dbo.EstadoCuenta EC
-            WHERE EC.IdCuenta = C.Id
-              AND EC.FechaInicio = X.N.value('@fechaInicio', 'DATE')
-              AND EC.FechaFin = X.N.value('@fechafin', 'DATE')
-        );
-
-        ------------------------------------------------------------
-        -- 5. USUARIOS
+        -- 4. USUARIOS
         ------------------------------------------------------------
         INSERT INTO dbo.Usuario
         (
@@ -172,7 +130,7 @@ BEGIN
         );
 
         ------------------------------------------------------------
-        -- 6. USUARIO VER CUENTAS
+        -- 5. USUARIO VER CUENTAS
         ------------------------------------------------------------
         INSERT INTO dbo.UsuarioVer
         (

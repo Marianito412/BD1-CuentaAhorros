@@ -1,9 +1,7 @@
-CREATE TABLE [dbo].[TipoOperacion] (
-    [Id]     INT          IDENTITY (1, 1) NOT NULL,
-    [Nombre] VARCHAR (64) NULL,
-    PRIMARY KEY CLUSTERED ([Id] ASC)
+CREATE TABLE dbo.TipoOperacion
+(
+    Id     INT         NOT NULL,
+    Nombre VARCHAR(64) NOT NULL,
+    CONSTRAINT PK_TipoOperacion
+        PRIMARY KEY (Id)
 );
-
-
-GO
-
