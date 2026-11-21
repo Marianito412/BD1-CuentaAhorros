@@ -18,15 +18,18 @@ BEGIN
             F.f.query('.')              AS XmlDia
         FROM @XmlDatos.nodes('/Operaciones/FechaOperacion') AS F(f)
     
-    select * from #Fechas
-    
     select 
         @FechaInicial = MIN(Fecha),
         @FechaFinal = MAX(Fecha)
     from #Fechas
+
+    DECLARE @UltimaProcesada DATE = (SELECT MAX(Fecha) FROM dbo.FechaProcesada);
     
     Declare @FechaActual DATE
-    SET @FechaActual = @FechaInicial
+    SET @FechaActual = CASE
+        WHEN @UltimaProcesada IS NULL THEN @FechaInicial          -- first run ever
+        ELSE DATEADD(DAY, 1, @UltimaProcesada)                    -- resume / catch up
+    END;
 
     DECLARE @XmlActual Xml;
     
@@ -57,8 +60,9 @@ BEGIN
             EXEC ProcesarMovimiento @XmlDia=@XmlActual, @Fecha = @FechaActual
             
             EXEC ProcesarCierresEstadoCuenta @inFecha = @FechaActual
-            ----------DEBUG----------
-            -- Insert Into #DatosProcesados(MyXml) Values(@MiXml);
+
+            INSERT INTO dbo.FechaProcesada (Fecha) VALUES (@FechaActual);
+            
             COMMIT TRANSACTION
         END TRY
         BEGIN CATCH
@@ -69,6 +73,8 @@ BEGIN
         Set @FechaActual = DATEADD(DAY, 1, @FechaActual) 
     END
 
-    RETURN 0;
+    SELECT
+        1 AS Resultado,
+        'Simulacion corrida correctamente.' AS Mensaje;;
 END
 GO

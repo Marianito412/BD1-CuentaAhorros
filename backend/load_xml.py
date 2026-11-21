@@ -1,79 +1,89 @@
-import os
+"""
+Carga los catalogos de la tercera tarea (CatalogosTarea3.xml)
+en la base de datos mediante el procedimiento CargarCatalogosXML.
+
+Uso (desde la carpeta backend):
+    python load_catalogos.py
+
+La contrasena de la base se pide al ejecutar el script para no
+dejarla escrita en el codigo.
+"""
+
+import getpass
 import pyodbc
 
 XML_PATH = "../OperacionesTarea3.xml"
 
-#SERVER = os.getenv("DB_SERVER")
-#DATABASE = os.getenv("DB_DATABASE")
-#USERNAME = os.getenv("DB_USER")
-#PASSWORD = os.getenv("DB_PASSWORD")
+SERVER = "marianito-edu.database.windows.net"
+DATABASE = "PC-1"
+USERNAME = "mariano"
 
-SERVER = "MARIANOPC\SQLEXPRESS" #os.getenv("DB_SERVER")
-DATABASE = "BancoDBLocal"#os.getenv("DB_DATABASE")
-USERNAME = "Marianito"#os.getenv("DB_USER")
-PASSWORD = "Password1"#os.getenv("DB_PASSWORD")
 
-if not all([SERVER, DATABASE, USERNAME, PASSWORD]):
-    raise Exception(
-        "Faltan variables de entorno: "
-        "DB_SERVER, DB_DATABASE, DB_USER, DB_PASSWORD"
+def get_connection(password):
+    connection_string = (
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        f"SERVER={SERVER};"
+        f"DATABASE={DATABASE};"
+        f"UID={USERNAME};"
+        f"PWD={password};"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+        "Connection Timeout=60;"
     )
 
-with open(XML_PATH, "r", encoding="utf-8-sig") as archivo:
-    xml_data = archivo.read()
+    return pyodbc.connect(connection_string)
 
-# Quitar cualquier declaración XML del inicio
-if xml_data.lstrip().startswith("<?xml"):
-    inicio = xml_data.find("<?xml")
-    fin = xml_data.find("?>", inicio)
 
-    if fin != -1:
-        xml_data = xml_data[fin + 2:].lstrip()
+def leer_xml(ruta):
+    with open(ruta, "r", encoding="utf-8-sig") as archivo:
+        xml_data = archivo.read()
 
-print("Primeros caracteres enviados a SQL:")
-print(repr(xml_data[:80]))
+    # SQL Server no acepta la declaracion <?xml ... encoding="UTF-8"?>
+    # cuando el texto se envia como unicode, por eso se quita
+    if xml_data.lstrip().startswith("<?xml"):
+        inicio = xml_data.find("<?xml")
+        fin = xml_data.find("?>", inicio)
 
-connection_string = (
-    "DRIVER={ODBC Driver 18 for SQL Server};"
-    f"SERVER={SERVER};"
-    f"DATABASE={DATABASE};"
-    #f"UID={USERNAME};"
-    #f"PWD={PASSWORD};"
-    "Encrypt=yes;"
-    "TrustServerCertificate=yes;"
-    "Trusted_Connection=yes;"
-    "Connection Timeout=60;"
-)
+        if fin != -1:
+            xml_data = xml_data[fin + 2:].lstrip()
 
-print("Conectando a Azure SQL...")
+    return xml_data
 
-conexion = pyodbc.connect(connection_string)
-cursor = conexion.cursor()
 
-try:
-    print("Cargando no_catalogos.xml...")
+def main():
+    xml_data = leer_xml(XML_PATH)
 
-    cursor.execute(
-       "EXEC dbo.ProcesarOperaciones @XmlDatos = ?",
-        xml_data
-    )
+    password = getpass.getpass(f"Contrasena de {USERNAME} en {SERVER}: ")
 
-    filas = cursor.fetchall()
+    conexion = get_connection(password)
+    cursor = conexion.cursor()
 
-    for fila in filas:
-        if fila:
-            print("Resultado:", fila)
-            #print("Mensaje:", fila[1])
+    try:
+        print("Cargando catalogos...")
 
-    conexion.commit()
+        cursor.execute(
+            "EXEC ProcesarOperaciones @XmlDatos = ?",
+            xml_data
+        )
 
-    print("Carga finalizada correctamente.")
+        fila = cursor.fetchone()
 
-except Exception as error:
-    conexion.rollback()
-    print("ERROR DURANTE LA CARGA:")
-    print(error)
+        if fila and fila[0] == 1:
+            conexion.commit()
+            print("Resultado:", fila[1])
+        else:
+            conexion.rollback()
+            print("ERROR:", fila[1] if fila else "Sin respuesta del procedimiento")
 
-finally:
-    cursor.close()
-    conexion.close()
+    except Exception as error:
+        conexion.rollback()
+        print("ERROR DURANTE LA CARGA:")
+        print(error)
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+if __name__ == "__main__":
+    main()
