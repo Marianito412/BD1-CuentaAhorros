@@ -80,7 +80,6 @@ BEGIN
         @NuevoSaldo
     );
 
-
     ------------------------------------------------------------
     -- 4. ACTUALIZAR EL ESTADO DE CUENTA DEL PERIODO
     -- Segun el catalogo de tipos de movimiento:
@@ -108,11 +107,60 @@ BEGIN
             END,
         CantidadOperacionesSinpe = CantidadOperacionesSinpe +
             CASE
-                WHEN @inIdTipoMovimiento IN (8, 9) THEN 1
+                WHEN @inIdTipoMovimiento = 9 THEN 1
                 ELSE 0
             END
     WHERE IdCuenta = @inIdCuenta
       AND @inFecha BETWEEN FechaInicio AND FechaFin;
 
+    ------------------------------------------------------------
+    -- 5. AGREGAR COBRO DE COMISION POR EXCESO DE SIMPE DIARIO
+    ------------------------------------------------------------
+    
+    IF @inIdTipoMovimiento = 9
+        BEGIN
+            DECLARE @IdTipoComision     INT = 10;
+            DECLARE @LimiteSimpeDiario  INT   = 0;
+            DECLARE @MontoComision      MONEY = 0;
+            
+            Select
+                @LimiteSimpeDiario = TC.MontoMaxSinpeDiario,
+                @MontoComision = TC.ComisionSinpe
+            from Cuenta as C
+            Inner join TipoCuentaAhorros as TC on TC.id = C.IdTipoCuenta
+            where C.Id = @inIdCuenta 
+            
+            DECLARE @TotalSimpeHoy MONEY;
+
+            SELECT @TotalSimpeHoy = SUM(M.Monto)
+            FROM dbo.Movimiento AS M
+            WHERE M.IdCuenta = @inIdCuenta
+              AND M.Fecha = @inFecha
+              AND M.IdTipoMovimiento = 9;
+
+            -- El movimiento actual ya esta insertado, por eso va ">"
+            IF @TotalSimpeHoy > @LimiteSimpeDiario
+                BEGIN
+                    -- Nuevo saldo despues de la comision
+                    SET @NuevoSaldo = @NuevoSaldo - @MontoComision;
+
+                    UPDATE dbo.Cuenta
+                    SET Saldo = @NuevoSaldo
+                    WHERE Id = @inIdCuenta;
+
+                    INSERT INTO dbo.Movimiento
+                    (IdCuenta, IdTipoMovimiento, Fecha, Monto, Descripcion, NuevoSaldo)
+                    VALUES
+                        (@inIdCuenta, @IdTipoComision, @inFecha, @MontoComision,
+                         'Comision por exceso de operaciones SIMPE diarias', @NuevoSaldo);
+
+                    UPDATE dbo.EstadoCuenta
+                    SET SaldoFinal  = @NuevoSaldo,
+                        SaldoMinimo = CASE WHEN @NuevoSaldo < SaldoMinimo THEN @NuevoSaldo ELSE SaldoMinimo END
+                    WHERE IdCuenta = @inIdCuenta
+                      AND @inFecha BETWEEN FechaInicio AND FechaFin;
+                END
+        END
+    
     RETURN 0;
 END;
