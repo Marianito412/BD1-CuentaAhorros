@@ -179,6 +179,13 @@ CREATE TABLE dbo.Movimiento
         FOREIGN KEY (IdTipoMovimiento) REFERENCES dbo.TipoMovimiento
 );
 
+-- Control del proceso de simulacion
+
+CREATE TABLE dbo.FechaProcesada (
+    Fecha            DATE      NOT NULL PRIMARY KEY,
+    FechaHoraProceso DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+);
+
 -- Usuarios del portal
 
 CREATE TABLE dbo.Usuario

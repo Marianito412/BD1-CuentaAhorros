@@ -6,6 +6,7 @@
 -- foraneas hacia otras.
 -- =============================================
 
+DROP TABLE IF EXISTS dbo.FechaProcesada;
 DROP TABLE IF EXISTS dbo.Bitacora;
 DROP TABLE IF EXISTS dbo.UsuarioVer;
 DROP TABLE IF EXISTS dbo.Usuario;
@@ -196,6 +197,13 @@ CREATE TABLE dbo.Movimiento
         FOREIGN KEY (IdCuenta) REFERENCES dbo.Cuenta,
     CONSTRAINT FK_Movimiento_TipoMovimiento
         FOREIGN KEY (IdTipoMovimiento) REFERENCES dbo.TipoMovimiento
+);
+
+-- Control del proceso de simulacion
+
+CREATE TABLE dbo.FechaProcesada (
+    Fecha            DATE      NOT NULL PRIMARY KEY,
+    FechaHoraProceso DATETIME2 NOT NULL DEFAULT SYSDATETIME()
 );
 
 -- Usuarios del portal
